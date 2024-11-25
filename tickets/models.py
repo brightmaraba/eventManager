@@ -23,8 +23,12 @@ class Ticket(models.Model):
             self.ticket_number = (last_ticket.ticket_number + 1) if last_ticket else 1
 
         # Generate QR code
-        qr = qrcode.make(f"http://127.0.0.1:8000/check_in/{self.payment_id}")
+        qr = qrcode.make(f"https://brightkoech.pythonanywhere.com/check_in/{self.payment_id}")
         qr_io = BytesIO()
+        qr.save(qr_io, format='PNG')
+        qr_io.seek(0)  # Reset the stream position to the beginning
+
+        # Save the QR code image to the qr_code field
         self.qr_code.save(f'qr_{self.ticket_number}.png', File(qr_io), save=False)
 
         super().save(*args, **kwargs)
