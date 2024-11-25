@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Ignore media files
+media/
+
 # C extensions
 *.so
 
