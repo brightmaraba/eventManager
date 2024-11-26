@@ -13,6 +13,8 @@ class Ticket(models.Model):
     date = models.DateTimeField(auto_now_add=True)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
     checked_in = models.BooleanField(default=False)
+    ticket_generated = models.BooleanField(default=True)
+    email_sent = models.BooleanField(default=False)
     qr_code = models.ImageField(upload_to='qr_codes/', blank=True, null=True)
     logo = models.ImageField(upload_to='logos/', default='default/logo.png', blank=True, null=True)
     banner = models.ImageField(upload_to='banners/', default='default/banner.jpg', blank=True, null=True)

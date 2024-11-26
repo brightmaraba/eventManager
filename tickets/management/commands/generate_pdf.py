@@ -20,6 +20,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         ticket_id = options.get('ticket_id')
+        email_count = 0  # Initialize email counter
 
         if ticket_id:
             tickets = Ticket.objects.filter(id=ticket_id)
@@ -27,7 +28,8 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR(f"No ticket found with ID {ticket_id}"))
                 return
         else:
-            tickets = Ticket.objects.all()
+            # Filter tickets that have not been been generated and emailed
+            tickets = Ticket.objects.filter(ticket_generated=True, email_sent=False)
 
         for ticket in tickets:
             # Generate PDF
@@ -62,7 +64,12 @@ class Command(BaseCommand):
 
             # Send email
             email.send()
+            email_count += 1  # Increment email counter
 
             self.stdout.write(self.style.SUCCESS(f"Email sent to {ticket.email} with attached PDF: {file_path}"))
+            # Update ticket to indicate it has been emailed
+            ticket.email_sent = True
+            ticket.ticket_generated = True
+            ticket.save()
 
-        self.stdout.write(self.style.SUCCESS("All emails sent successfully."))
+        self.stdout.write(self.style.SUCCESS(f"All emails sent successfully. Total emails sent: {email_count}"))
