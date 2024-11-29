@@ -92,10 +92,10 @@
     <table>
         <thead>
             <tr>
-                <th>Ticket Number</th>
+                <th scope="col">Ticket Number</th>
                 <th>PaymentID</th>
                 <th>Date</th>
-                <th>Status</th>
+                <th>Checked In</th>
                 <th>Ticket</th>
             </tr>
         </thead>
@@ -105,9 +105,16 @@
                     <td>{{ ticket.ticket_number }}</td>
                     <td>{{ ticket.payment_id }}</td>
                     <td>{{ ticket.date }}</td>
-                    <td>{{ ticket.checked_in }}</td>
                     <td>
-            <a href="{% url 'ticket_view' ticket.payment_id %}"  class="view-button">View</a>
+                        {% if ticket.checked_in %}
+                            <span style="color: green;">&#10004;</span>
+                        {% else %}
+                            <span style="color: red;">&#10008;</span>
+                        {% endif %}
+                    </td>
+                    <td>
+            <a href="{% url 'ticket_view' ticket.payment_id %}" class="view-button" aria-label="View Ticket {{ ticket.ticket_number }}">View</a>
+
           </td>
 
                 </tr>
