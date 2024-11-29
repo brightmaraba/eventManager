@@ -93,7 +93,7 @@
         <thead>
             <tr>
                 <th>Ticket Number</th>
-                <th>Email</th>
+                <th>PaymentID</th>
                 <th>Date</th>
                 <th>Status</th>
                 <th>Ticket</th>
@@ -103,7 +103,7 @@
             {% for ticket in page_obj %}
                 <tr>
                     <td>{{ ticket.ticket_number }}</td>
-                    <td>{{ ticket.email }}</td>
+                    <td>{{ ticket.payment_id }}</td>
                     <td>{{ ticket.date }}</td>
                     <td>{{ ticket.checked_in }}</td>
                     <td>
