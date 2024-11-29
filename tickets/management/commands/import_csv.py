@@ -7,7 +7,7 @@ class Command(BaseCommand):
     help = 'Import tickets from a CSV file'
 
     def handle(self, *args, **kwargs):
-        with open('/home/brightkoech/eventManager/tickets/updated_26.csv', mode='r') as file:
+        with open('/home/brightkoech/eventManager/tickets/update_28.csv', mode='r') as file:
             reader = csv.DictReader(file)
             for row in reader:
                 Ticket.objects.create(
