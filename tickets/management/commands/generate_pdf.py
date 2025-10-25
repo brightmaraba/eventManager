@@ -51,7 +51,7 @@ class Command(BaseCommand):
                 f.write(pdf_file)
 
             # Prepare email
-            email_subject = 'Your Kitwek Cultural Gala Ticket'
+            email_subject = 'Your Kalenjin Gala Night Ticket'
             email_body = render_to_string('tickets_email.html', context)
             email = EmailMultiAlternatives(
                 subject=email_subject,

@@ -3,147 +3,260 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home Page</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-        }
-        .navbar {
-            background-color: #333;
-            overflow: hidden;
-        }
-        .navbar a {
-            float: left;
-            display: block;
-            color: #f2f2f2;
-            text-align: center;
-            padding: 14px 16px;
-            text-decoration: none;
-        }
-        .navbar a:hover {
-            background-color: #ddd;
-            color: black;
-        }
-        .navbar .logo {
-            float: left;
-            padding: 5px 10px;
-        }
-        .navbar .logo img {
-            height: 40px;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 20px 0;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .pagination {
-            display: flex;
-            justify-content: center;
-            list-style-type: none;
-            padding: 0;
-        }
-        .pagination li {
-            margin: 0 5px;
-        }
-        .pagination a {
-            text-decoration: none;
-            color: #007bff;
-        }
-        .pagination .active a {
-            font-weight: bold;
-            color: #000;
-        }
-        .view-button {
-        background-color: #4CAF50; /* Green */
-        border: none;
-        color: white;
-        padding: 10px 20px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 14px;
-        margin: 4px 2px;
-        cursor: pointer;
-        border-radius: 4px;
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tickets | Home</title>
+  <style>
+    :root {
+      --primary: #4CAF50;
+      --secondary: #007bff;
+      --dark: #333;
+      --light: #f2f2f2;
+    }
+
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #fafafa;
+      color: #333;
+      line-height: 1.6;
+    }
+
+    /* Navbar */
+    .navbar {
+      background-color: var(--dark);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 1rem;
+      flex-wrap: wrap;
+    }
+
+    .navbar .logo img {
+      height: 40px;
+      width: auto;
+    }
+
+    .navbar a {
+      color: var(--light);
+      text-decoration: none;
+      padding: 10px 15px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .navbar a:hover {
+      background-color: var(--light);
+      color: var(--dark);
+      border-radius: 4px;
+    }
+
+    /* Main container */
+    .container {
+      max-width: 1000px;
+      margin: 40px auto;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--dark);
+    }
+
+    /* Table styling */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow-x: auto;
+      display: block;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+      white-space: nowrap;
+    }
+
+    th {
+      background-color: var(--light);
+      font-weight: 600;
+    }
+
+    tr:hover {
+      background-color: #f9f9f9;
+    }
+
+    .status-true {
+      color: green;
+      font-weight: bold;
+    }
+
+    .status-false {
+      color: red;
+      font-weight: bold;
+    }
+
+    /* Buttons */
+    .view-button {
+      background-color: var(--primary);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background-color 0.3s ease;
+    }
+
+    .view-button:hover {
+      background-color: #45a049;
+    }
+
+    /* Pagination */
+    .pagination {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      list-style: none;
+      padding: 0;
+      margin-top: 25px;
+    }
+
+    .pagination li {
+      margin: 5px;
+    }
+
+    .pagination a {
+      text-decoration: none;
+      color: var(--secondary);
+      padding: 6px 10px;
+      border: 1px solid var(--secondary);
+      border-radius: 4px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .pagination a:hover,
+    .pagination .active a {
+      background-color: var(--secondary);
+      color: #fff;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .navbar {
+        flex-direction: column;
+        align-items: flex-start;
       }
-    </style>
+
+      .navbar a {
+        display: block;
+        width: 100%;
+        padding: 10px;
+      }
+
+      .container {
+        margin: 20px;
+        padding: 15px;
+      }
+
+      table {
+        font-size: 14px;
+      }
+
+      .view-button {
+        padding: 6px 12px;
+        font-size: 13px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      h1 {
+        font-size: 1.4rem;
+      }
+
+      th, td {
+        padding: 8px 5px;
+      }
+    }
+  </style>
 </head>
 <body>
-    <div class="navbar">
-        <div class="logo">
-            <a href="#"><img src="{% static 'images/logo.png' %}" alt="Logo"></a>
-        </div>
-        <a href="{% url 'home' %}">Home</a>
+  <nav class="navbar">
+    <div class="logo">
+      <a href="#"><img src="{% static 'images/logo.jpg' %}" alt="Logo"></a>
     </div>
+    <div class="nav-links">
+      <a href="{% url 'home' %}">Home</a>
+    </div>
+  </nav>
 
+  <main class="container">
     <h1>Tickets</h1>
-    <table>
+    <div class="table-wrapper">
+      <table>
         <thead>
-            <tr>
-                <th scope="col">Ticket Number</th>
-                <th>PaymentID</th>
-                <th>Date</th>
-                <th>Checked In</th>
-                <th>Ticket</th>
-            </tr>
+          <tr>
+            <th scope="col">Ticket Number</th>
+            <th>Payment ID</th>
+            <th>Date</th>
+            <th>Checked In</th>
+            <th>Ticket</th>
+          </tr>
         </thead>
         <tbody>
-            {% for ticket in page_obj %}
-                <tr>
-                    <td>{{ ticket.ticket_number }}</td>
-                    <td>{{ ticket.payment_id }}</td>
-                    <td>{{ ticket.date }}</td>
-                    <td>
-                        {% if ticket.checked_in %}
-                            <span style="color: green;">&#10004;</span>
-                        {% else %}
-                            <span style="color: red;">&#10008;</span>
-                        {% endif %}
-                    </td>
-                    <td>
-            <a href="{% url 'ticket_view' ticket.payment_id %}" class="view-button" aria-label="View Ticket {{ ticket.ticket_number }}">View</a>
-
-          </td>
-
-                </tr>
-            {% empty %}
-                <tr>
-                    <td colspan="3">No tickets available.</td>
-                </tr>
-            {% endfor %}
+          {% for ticket in page_obj %}
+          <tr>
+            <td>{{ ticket.ticket_number }}</td>
+            <td>{{ ticket.payment_id }}</td>
+            <td>{{ ticket.date }}</td>
+            <td>
+              {% if ticket.checked_in %}
+              <span class="status-true">&#10004;</span>
+              {% else %}
+              <span class="status-false">&#10008;</span>
+              {% endif %}
+            </td>
+            <td>
+              <a href="{% url 'ticket_view' ticket.payment_id %}" class="view-button" aria-label="View Ticket {{ ticket.ticket_number }}">
+                View
+              </a>
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="5" style="text-align:center;">No tickets available.</td>
+          </tr>
+          {% endfor %}
         </tbody>
-    </table>
+      </table>
+    </div>
 
     <ul class="pagination">
-        {% if page_obj.has_previous %}
-            <li><a href="?page=1">&laquo; first</a></li>
-            <li><a href="?page={{ page_obj.previous_page_number }}">previous</a></li>
-        {% endif %}
+      {% if page_obj.has_previous %}
+        <li><a href="?page=1">&laquo; First</a></li>
+        <li><a href="?page={{ page_obj.previous_page_number }}">Previous</a></li>
+      {% endif %}
 
-        {% for num in page_obj.paginator.page_range %}
-            {% if page_obj.number == num %}
-                <li class="active"><a href="?page={{ num }}">{{ num }}</a></li>
-            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                <li><a href="?page={{ num }}">{{ num }}</a></li>
-            {% endif %}
-        {% endfor %}
-
-        {% if page_obj.has_next %}
-            <li><a href="?page={{ page_obj.next_page_number }}">next</a></li>
-            <li><a href="?page={{ page_obj.paginator.num_pages }}">last &raquo;</a></li>
+      {% for num in page_obj.paginator.page_range %}
+        {% if page_obj.number == num %}
+          <li class="active"><a href="?page={{ num }}">{{ num }}</a></li>
+        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+          <li><a href="?page={{ num }}">{{ num }}</a></li>
         {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li><a href="?page={{ page_obj.next_page_number }}">Next</a></li>
+        <li><a href="?page={{ page_obj.paginator.num_pages }}">Last &raquo;</a></li>
+      {% endif %}
     </ul>
+  </main>
 </body>
 </html>
