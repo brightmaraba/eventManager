@@ -7,7 +7,7 @@ from django.db import models
 class Ticket(models.Model):
     id = models.AutoField(primary_key=True)
     ticket_number = models.PositiveIntegerField(unique=True, null=True, blank=True)
-    payment_id = models.CharField(max_length=50, unique=True)
+    payment_id = models.CharField(max_length=100, unique=True)
     email = models.EmailField()
     date = models.DateTimeField(auto_now_add=True)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
@@ -15,7 +15,7 @@ class Ticket(models.Model):
     ticket_generated = models.BooleanField(default=True)
     email_sent = models.BooleanField(default=False)
     qr_code = models.ImageField(upload_to='qr_codes/', blank=True, null=True)
-    logo = models.ImageField(upload_to='logos/', default='default/logo.jpg', blank=True, null=True)
+    logo = models.ImageField(upload_to='logos/', default='default/logo.png', blank=True, null=True)
     banner = models.ImageField(upload_to='banners/', default='default/banner.jpg', blank=True, null=True)
 
     def save(self, *args, **kwargs):
