@@ -1,9 +1,10 @@
-<!DOCTYPE html>
+<!doctype html>
+{% load static %}
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Berur Association Gala Dinner Ticket</title>
+    <title>Kitwek Association SA Gala Dinner Ticket</title>
     <style>
       /* ===== Global Styles ===== */
       * {
@@ -13,107 +14,137 @@
       }
 
       body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
-          'Helvetica Neue', Arial, sans-serif;
-        background-color: #f5f5f5;
+        font-family:
+          'Segoe UI',
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          Roboto,
+          'Helvetica Neue',
+          Arial,
+          sans-serif;
+        background-color: #f0f2f5;
         margin: 0;
         padding: 20px;
-        color: #1a1a1a;
+        color: #1a1a2e;
         min-height: 100vh;
       }
 
       .ticket {
-        background-color: #ffffff;
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 30px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        background: linear-gradient(180deg, #ffffff 0%, #fafbff 100%);
+        border: 1px solid #d4d8e8;
+        border-radius: 12px;
+        padding: 28px 32px;
+        box-shadow:
+          0 4px 20px rgba(26, 26, 46, 0.08),
+          0 1px 3px rgba(0, 0, 0, 0.06);
         max-width: 800px;
         margin: 0 auto;
         display: flex;
         flex-direction: column;
         position: relative;
         min-height: auto;
+        overflow: hidden;
+      }
+
+      .ticket::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(
+          90deg,
+          #2d3561 0%,
+          #4a5583 50%,
+          #2d3561 100%
+        );
+        border-radius: 12px 12px 0 0;
       }
 
       /* ===== Header ===== */
       .header {
         text-align: center;
-        border-bottom: 2px solid #e8e8e8;
-        padding-bottom: 8px;
-        margin-bottom: 10px;
+        padding: 12px 0 14px;
+        margin-bottom: 6px;
         flex-shrink: 0;
+        border-bottom: 2px solid #e8eaf0;
       }
 
       .header h1 {
         font-size: 20px;
-        font-weight: 600;
-        margin: 0 0 6px 0;
-        color: #1a1a1a;
-        letter-spacing: -0.3px;
-        line-height: 1.3;
+        font-weight: 700;
+        margin: 0 0 8px 0;
+        color: #1a1a2e;
+        letter-spacing: -0.02em;
+        line-height: 1.35;
       }
 
       .date-generated {
-        font-size: 10px;
-        color: #666;
+        font-size: 11px;
+        color: #5c6178;
         text-align: right;
         margin-top: 4px;
         font-weight: 500;
       }
 
       .date-generated strong {
-        color: #333;
+        color: #2d3561;
         font-weight: 600;
       }
 
       /* ===== Logo Section ===== */
       .logo {
         text-align: center;
-        margin: 8px 0;
+        margin: 10px 0 14px;
         flex-shrink: 0;
       }
 
       .logo img {
-        width: 110px;
+        width: 180px;
         height: auto;
-        max-height: 60px;
-        border-radius: 4px;
+        max-height: 95px;
+        border-radius: 8px;
         object-fit: contain;
         display: block;
         margin: 0 auto;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.06));
       }
 
       /* ===== Content Layout ===== */
       .content {
         display: flex;
-        gap: 12px;
+        gap: 16px;
         align-items: flex-start;
         flex: 1 1 auto;
         min-height: 0;
-        margin-bottom: 8px;
+        margin-bottom: 12px;
       }
 
       /* Left side: Photo/Banner */
       .photo {
-        flex: 0 0 38%;
+        flex: 0 0 32%;
         text-align: center;
-        border: 1px solid #e0e0e0;
-        border-radius: 6px;
+        border: 1px solid #e2e6ef;
+        border-radius: 10px;
         padding: 8px;
-        background-color: #fafafa;
+        background: linear-gradient(145deg, #f8f9fc 0%, #f0f2f8 100%);
         display: flex;
         align-items: center;
         justify-content: center;
-        min-height: 140px;
+        min-height: 90px;
+        max-height: 120px;
         overflow: hidden;
+        box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8);
       }
 
       .photo img {
         width: 100%;
         max-width: 100%;
+        max-height: 108px;
         height: auto;
-        border-radius: 4px;
+        border-radius: 6px;
         object-fit: contain;
         display: block;
       }
@@ -125,58 +156,61 @@
         display: flex;
         flex-direction: column;
         min-height: 0;
-        gap: 8px;
+        gap: 6px;
       }
 
       .detail-row {
-        padding-bottom: 6px;
-        border-bottom: 1px solid #f0f0f0;
+        padding: 8px 10px;
+        border-radius: 8px;
+        background: #f8f9fc;
+        border: 1px solid #eef0f5;
         flex-shrink: 0;
       }
 
       .detail-row:last-of-type {
-        border-bottom: none;
+        border: none;
       }
 
       .details p {
         margin: 0;
         font-size: 13px;
         line-height: 1.5;
-        color: #333;
+        color: #2d3561;
       }
 
       .details strong {
-        color: #1a1a1a;
+        color: #1a1a2e;
         font-weight: 600;
         display: inline-block;
-        min-width: 110px;
+        min-width: 120px;
       }
 
       /* QR Section */
       .qr {
         text-align: center;
-        margin-top: 8px;
-        padding: 8px;
-        background-color: #ffffff;
-        border: 1px solid #e0e0e0;
-        border-radius: 6px;
+        margin-top: 10px;
+        padding: 12px;
+        background: linear-gradient(145deg, #ffffff 0%, #f8f9fc 100%);
+        border: 1px solid #e2e6ef;
+        border-radius: 10px;
         flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(45, 53, 97, 0.06);
       }
 
       .qr-label {
-        font-size: 9px;
-        color: #666;
+        font-size: 10px;
+        color: #5c6178;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-bottom: 6px;
-        font-weight: 600;
+        letter-spacing: 0.8px;
+        margin-bottom: 8px;
+        font-weight: 700;
       }
 
       .qr img {
-        width: 140px;
-        height: 140px;
+        width: 130px;
+        height: 130px;
         border: none;
-        border-radius: 4px;
+        border-radius: 8px;
         object-fit: contain;
         display: block;
         margin: 0 auto;
@@ -185,12 +219,14 @@
 
       /* ===== Terms and Footer ===== */
       .terms {
-        margin-top: 8px;
-        border-top: 1px solid #e8e8e8;
-        padding-top: 8px;
+        margin-top: 12px;
+        padding: 12px 14px;
+        border-radius: 8px;
+        background: #f8f9fc;
+        border: 1px solid #eef0f5;
         font-size: 10px;
-        color: #666;
-        line-height: 1.4;
+        color: #5c6178;
+        line-height: 1.45;
         flex-shrink: 0;
       }
 
@@ -199,38 +235,62 @@
       }
 
       .terms strong {
-        color: #1a1a1a;
+        color: #2d3561;
         font-weight: 600;
       }
 
       .footer {
         text-align: center;
-        margin-top: auto;
+        margin-top: 14px;
+        padding-top: 14px;
+        border-top: 2px solid #e8eaf0;
         font-size: 10px;
-        color: #666;
-        border-top: 1px solid #e8e8e8;
-        padding-top: 8px;
+        color: #5c6178;
         flex-shrink: 0;
       }
 
       .footer p {
-        margin: 3px 0;
-        line-height: 1.4;
+        margin: 4px 0;
+        line-height: 1.45;
       }
 
       .footer p:first-child {
-        font-weight: 500;
-        color: #333;
+        font-weight: 600;
+        color: #2d3561;
       }
 
       .footer strong {
-        color: #1a1a1a;
+        color: #1a1a2e;
         font-weight: 600;
       }
 
       .footer em {
-        color: #666;
+        color: #5c6178;
         font-style: normal;
+      }
+
+      .dev-logo {
+        margin-top: 12px;
+        padding-top: 10px;
+        border-top: 1px dashed #d4d8e8;
+      }
+
+      .dev-logo img {
+        height: 28px;
+        width: auto;
+        max-width: 120px;
+        object-fit: contain;
+        opacity: 0.85;
+        display: inline-block;
+        vertical-align: middle;
+      }
+
+      .dev-logo span {
+        font-size: 9px;
+        color: #9ca3b8;
+        display: block;
+        margin-top: 4px;
+        letter-spacing: 0.3px;
       }
 
       /* ===== Print Styles ===== */
@@ -243,11 +303,17 @@
 
         .ticket {
           box-shadow: none;
-          border: none;
+          border: 1px solid #ddd;
           width: 100%;
           max-width: 100%;
           page-break-inside: avoid;
-          padding: 20px;
+          padding: 20px 24px;
+          background: #ffffff;
+        }
+
+        .ticket::before {
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
         }
 
         .content {
@@ -258,6 +324,10 @@
         .qr {
           border: 1px solid #ddd;
         }
+
+        .dev-logo img {
+          opacity: 1;
+        }
       }
     </style>
   </head>
@@ -266,7 +336,7 @@
     <div class="ticket">
       <!-- Header -->
       <div class="header">
-        <h1>Welcome to the Berur Association Gala Dinner 2025</h1>
+        <h1>Welcome to the Kitwek Association Gala Dinner 2026</h1>
         <div class="date-generated">
           Date of Generation:
           <strong>{{ ticket.date }}</strong>
@@ -275,14 +345,14 @@
 
       <!-- Logo -->
       <div class="logo">
-        <img src="{{ ticket.logo.url }}" alt="Event Logo" />
+        <img src="{% static 'images/logo.jpg' %}" alt="Event Logo" />
       </div>
 
       <!-- Ticket Content -->
       <div class="content">
         <!-- Photo Section -->
         <div class="photo">
-          <img src="{{ ticket.banner.url }}" alt="Guest Banner" />
+          <img src="{% static 'images/banner.jpeg' %}" alt="Guest Banner" />
         </div>
 
         <!-- Details Section -->
@@ -311,7 +381,7 @@
       <div class="terms">
         <p>
           Terms & Conditions apply. Please present this ticket at the entrance.
-          For inquiries, contact <strong>info@berurassociation.org</strong>.
+          For inquiries, contact <strong>sakitwek@gmail.com</strong>.
         </p>
       </div>
 
@@ -320,8 +390,12 @@
         <p>Thank you for attending our event!</p>
         <p>
           A <strong>Libran Consult</strong> imprint for the
-          <em>Berur Association, QLD</em>.
+          <em>Kitwek Association, SA</em>.
         </p>
+        <div class="dev-logo">
+          <img src="{% static 'images/dev.png' %}" alt="Developer" />
+          <span>Powered by Libran Consult</span>
+        </div>
       </div>
     </div>
   </body>

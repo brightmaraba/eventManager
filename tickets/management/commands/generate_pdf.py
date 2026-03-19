@@ -8,24 +8,27 @@ from weasyprint import HTML, CSS
 from tickets.models import Ticket
 from django.template.loader import render_to_string
 
+
 class Command(BaseCommand):
-    help = 'Generate PDFs for tickets and email them to users'
+    help = "Generate PDFs for tickets and email them to users"
 
     def add_arguments(self, parser):
         parser.add_argument(
-            '--ticket-id',
+            "--ticket-id",
             type=int,
-            help='Email PDF for a specific ticket ID',
+            help="Email PDF for a specific ticket ID",
         )
 
     def handle(self, *args, **options):
-        ticket_id = options.get('ticket_id')
+        ticket_id = options.get("ticket_id")
         email_count = 0  # Initialize email counter
 
         if ticket_id:
             tickets = Ticket.objects.filter(id=ticket_id)
             if not tickets.exists():
-                self.stdout.write(self.style.ERROR(f"No ticket found with ID {ticket_id}"))
+                self.stdout.write(
+                    self.style.ERROR(f"No ticket found with ID {ticket_id}")
+                )
                 return
         else:
             # Filter tickets that have not been been generated and emailed
@@ -33,26 +36,43 @@ class Command(BaseCommand):
 
         for ticket in tickets:
             # Generate PDF
-            file_path = os.path.join(settings.MEDIA_ROOT, 'tickets', f'ticket_{ticket.id}.pdf')
-            context = {'ticket': ticket}
-            html_string = render_to_string('ticket.html', context)
-
-            # Convert static and media URLs to absolute paths
-            html_string = html_string.replace(
-                '{% static ', f'file://{os.path.join(settings.STATIC_ROOT, "")}'
-            )
-            html_string = html_string.replace(
-                '/media/', f'file://{settings.MEDIA_ROOT}/'
+            file_path = os.path.join(
+                settings.MEDIA_ROOT, "tickets", f"ticket_{ticket.id}.pdf"
             )
 
-            pdf_file = HTML(string=html_string).write_pdf(stylesheets=[CSS(string='@page { size: A4; margin: 1cm; }')])
+            # Ensure the directory for ticket PDFs exists
+            os.makedirs(os.path.dirname(file_path), exist_ok=True)
+            context = {"ticket": ticket}
+            html_string = render_to_string("ticket.html", context)
 
-            with open(file_path, 'wb') as f:
+            # Convert static and media URLs to absolute filesystem paths for WeasyPrint
+            static_root = getattr(settings, "STATIC_ROOT", None) or os.path.join(
+                settings.BASE_DIR, "event_manager", "static"
+            )
+            static_root = str(static_root).rstrip("/")
+            media_root = str(settings.MEDIA_ROOT).rstrip("/")
+            static_prefix = "/static/"
+            media_prefix = "/media/"
+
+            html_string = html_string.replace(
+                f'src="{static_prefix}',
+                f'src="file://{static_root}/',
+            )
+            html_string = html_string.replace(
+                f'src="{media_prefix}',
+                f'src="file://{media_root}/',
+            )
+
+            pdf_file = HTML(string=html_string).write_pdf(
+                stylesheets=[CSS(string="@page { size: A4; margin: 1cm; }")]
+            )
+
+            with open(file_path, "wb") as f:
                 f.write(pdf_file)
 
             # Prepare email
-            email_subject = 'Your Berur Association Gala Dinner Ticket'
-            email_body = render_to_string('tickets_email.html', context)
+            email_subject = "Your Kitwek Association SA Gala 2026 Dinner Ticket"
+            email_body = render_to_string("tickets_email.html", context)
             email = EmailMultiAlternatives(
                 subject=email_subject,
                 body=email_body,
@@ -66,10 +86,18 @@ class Command(BaseCommand):
             email.send()
             email_count += 1  # Increment email counter
 
-            self.stdout.write(self.style.SUCCESS(f"Email sent to {ticket.email} with attached PDF: {file_path}"))
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Email sent to {ticket.email} with attached PDF: {file_path}"
+                )
+            )
             # Update ticket to indicate it has been emailed
             ticket.email_sent = True
             ticket.ticket_generated = True
             ticket.save()
 
-        self.stdout.write(self.style.SUCCESS(f"All emails sent successfully. Total emails sent: {email_count}"))
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"All emails sent successfully. Total emails sent: {email_count}"
+            )
+        )
