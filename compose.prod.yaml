@@ -1,0 +1,128 @@
+name: event-tables-prod
+x-app: &app
+  image: ${APP_IMAGE:?Set APP_IMAGE to your tested registry image and tag or digest}
+  restart: unless-stopped
+  init: true
+  read_only: true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,size=128m
+  security_opt:
+    - no-new-privileges:true
+  cap_drop: [ALL]
+  environment: &app-env
+    DJANGO_DEBUG: "0"
+    DJANGO_SECRET_KEY_FILE: /run/secrets/django_secret_key
+    DJANGO_ALLOWED_HOSTS: ${DOMAIN:?Set DOMAIN},localhost,127.0.0.1
+    DJANGO_CSRF_TRUSTED_ORIGINS: https://${DOMAIN}
+    POSTGRES_DB: event_tables
+    POSTGRES_USER: event_tables
+    POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    CELERY_BROKER_URL: redis://redis:6379/0
+    EMAIL_HOST: smtp.sendgrid.net
+    EMAIL_PORT: "587"
+    EMAIL_USE_TLS: "1"
+    EMAIL_HOST_USER: apikey
+    SENDGRID_API_KEY_FILE: /run/secrets/sendgrid_api_key
+    DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:?Set authenticated sender address}
+  secrets: [django_secret_key, postgres_password, sendgrid_api_key]
+  volumes:
+    - private_data:/app/private
+    - static_data:/app/staticfiles
+  networks: [backend, egress]
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  logging:
+    driver: json-file
+    options:
+      max-size: 10m
+      max-file: "5"
+services:
+  db:
+    image: postgres:17-bookworm
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: event_tables
+      POSTGRES_USER: event_tables
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    secrets: [postgres_password]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks: [backend]
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U event_tables -d event_tables"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  redis:
+    image: redis:7.4-alpine
+    restart: unless-stopped
+    command: [redis-server, --appendonly, "yes", --appendfsync, everysec, --maxmemory-policy, noeviction]
+    volumes:
+      - redis_data:/data
+    networks: [backend]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+  release:
+    <<: *app
+    restart: "no"
+    profiles: [release]
+    command: [sh, -c, "python manage.py migrate --noinput && python manage.py collectstatic --noinput"]
+  web:
+    <<: *app
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health/ready/', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+  worker:
+    <<: *app
+    command: [celery, -A, config, worker, -l, INFO, -Q, "default,imports,mail,reports", --concurrency=2]
+    stop_grace_period: 330s
+  beat:
+    <<: *app
+    command: [celery, -A, config, beat, -l, INFO, --schedule=/app/run/celerybeat-schedule]
+    volumes:
+      - beat_data:/app/run
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME account email}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [egress]
+    depends_on:
+      web:
+        condition: service_healthy
+volumes:
+  postgres_data:
+  redis_data:
+  private_data:
+  static_data:
+  beat_data:
+  caddy_data:
+  caddy_config:
+networks:
+  backend:
+    internal: true
+  egress:
+secrets:
+  django_secret_key:
+    file: ./secrets/django_secret_key.txt
+  postgres_password:
+    file: ./secrets/postgres_password.txt
+  sendgrid_api_key:
+    file: ./secrets/sendgrid_api_key.txt

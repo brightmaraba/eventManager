@@ -1,0 +1,87 @@
+name: event-tables-dev
+x-app: &app
+  build: .
+  environment: &app-env
+    DJANGO_DEBUG: "1"
+    DJANGO_SECRET_KEY: dev-only-insecure-key-change-in-production
+    DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+    POSTGRES_DB: event_tables
+    POSTGRES_USER: event_tables
+    POSTGRES_PASSWORD: dev-only-password
+    CELERY_BROKER_URL: redis://redis:6379/0
+    EMAIL_HOST: maildev
+    EMAIL_PORT: "1025"
+    EMAIL_USE_TLS: "0"
+    DEFAULT_FROM_EMAIL: events@example.test
+  volumes:
+    - .:/app
+    - dev_private:/app/private
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+services:
+  db:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_DB: event_tables
+      POSTGRES_USER: event_tables
+      POSTGRES_PASSWORD: dev-only-password
+    volumes:
+      - dev_db:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U event_tables -d event_tables"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis:
+    image: redis:7.4-alpine
+    command: [redis-server, --appendonly, "yes", --maxmemory-policy, noeviction]
+    volumes:
+      - dev_redis:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  maildev:
+    image: maildev/maildev:2
+    ports:
+      - "127.0.0.1:1080:1080"
+  migrate:
+    <<: *app
+    command: [python, manage.py, migrate, --noinput]
+    restart: "no"
+  web:
+    <<: *app
+    command: [python, manage.py, runserver, "0.0.0.0:8000"]
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      maildev:
+        condition: service_started
+  worker:
+    <<: *app
+    command: [celery, -A, config, worker, -l, INFO, -Q, "default,imports,mail,reports", --concurrency=2]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+  beat:
+    <<: *app
+    command: [celery, -A, config, beat, -l, INFO, --schedule=/tmp/celerybeat-schedule]
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+volumes:
+  dev_db:
+  dev_redis:
+  dev_private:

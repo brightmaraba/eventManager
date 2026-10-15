@@ -1,0 +1,896 @@
+{
+  "plan_version": "1.0.0",
+  "title": "Event Table Management System — Cursor Implementation Plan",
+  "format_note": "Custom implementation-plan JSON to be read by Cursor Agent. This is not an assertion of a native Cursor import schema.",
+  "source_documents": [
+    "SPECIFICATION.md",
+    "README.md"
+  ],
+  "project_root": ".",
+  "objective": "Implement the complete event table management application on top of the supplied Dockerized Django scaffold.",
+  "current_state": {
+    "implemented": [
+      "Django settings, admin and health routes",
+      "PostgreSQL and Redis service configuration",
+      "Celery worker and beat configuration",
+      "MailDev development configuration",
+      "SendGrid production SMTP configuration",
+      "Development and production Compose templates",
+      "Caddy HTTPS template"
+    ],
+    "not_implemented": [
+      "Domain models and services",
+      "Event-management UI",
+      "CSV import",
+      "Seating editor and reservations",
+      "Communications and outbox jobs",
+      "Reports, guest links and check-in",
+      "Production hardening"
+    ],
+    "verification": "Both Compose files passed config validation. Image builds and runtime tests were not run because Docker engine access was unavailable."
+  },
+  "cursor_execution_instructions": [
+    "Read this file, SPECIFICATION.md, README.md and repository instructions before editing. Inspect actual files; do not assume specifications are implemented.",
+    "Work through tasks in dependency order. Implement each vertical slice including migrations, services, views, templates and meaningful tests before marking it complete.",
+    "Preserve the specified Django, HTML, CSS, PostgreSQL, Redis, Celery, MailDev and SendGrid architecture. Use focused vanilla JavaScript and SVG for the editor; do not replace the application with a SPA.",
+    "Use shared domain services for every mutation, including Django admin and background tasks. Never allow direct admin editing to bypass seat, ticket, tenant or audit invariants.",
+    "Track status and concrete validation evidence in IMPLEMENTATION_STATUS.json. Record blocked checks separately from passes. Do not mark mocked integration tests as real provider or deployment validation.",
+    "Complete local implementation and reversible verification autonomously. Do not deploy, send real guest emails, publish registry images or destroy live data merely because deployment commands are listed.",
+    "Use synthetic example.test email data for local and automated tests. Real provider checks require a configured staging sender and explicitly selected test recipients.",
+    "Do not stop after scaffolding, static UI mockups or TODO handlers. Every completed feature must persist and work end to end.",
+    "If external credentials or Docker access are unavailable, continue independent implementation, document the exact blocked verification and never invent successful results.",
+    "Resolve and lock compatible dependencies during implementation, using official documentation for version-sensitive APIs.",
+    "Update README.md when commands or architecture change. Finish with completed tasks, remaining blockers, actual test results and the startup procedure."
+  ],
+  "scope": {
+    "required": [
+      "Multi-organization event CRUD and scoped roles",
+      "Event details, address, logo, dates and timezone",
+      "Room/table/chair CRUD and capacity",
+      "Seat and whole-table admin holds",
+      "CSV email and ticket-count import with preview",
+      "Graphical arrangement and manual/group seating",
+      "Versioned published layouts",
+      "Guest email campaigns and durable delivery",
+      "Printable seating plans, rosters and cards",
+      "PDF and CSV exports",
+      "Guest seating links and per-ticket check-in",
+      "Security, monitoring, backup and production hardening"
+    ],
+    "deferred": [
+      "Ticket sales and payments",
+      "Automatic seating optimization",
+      "Guest self-selection",
+      "Offline check-in",
+      "External ticket-provider synchronization",
+      "WebSockets",
+      "High availability"
+    ]
+  },
+  "architecture": {
+    "backend": "Python 3.12 / Django 5.2 LTS",
+    "frontend": "Django templates, semantic HTML, CSS, vanilla JavaScript modules and SVG",
+    "database": "PostgreSQL 17",
+    "broker": "Redis 7.4",
+    "jobs": "Celery 5.6, one beat instance, PostgreSQL job/outbox state",
+    "email": {
+      "development": "MailDev: SMTP 1025, inbox 1080",
+      "production": "SendGrid SMTP with STARTTLS on 587, username apikey, secret-mounted API key"
+    },
+    "production": "Single Linux host, Docker Compose, Gunicorn and Caddy",
+    "apps": [
+      "accounts",
+      "events",
+      "layouts",
+      "guests",
+      "seating",
+      "communications",
+      "reports",
+      "checkin",
+      "audit"
+    ],
+    "testing": "pytest/pytest-django with PostgreSQL; browser automation for real workflows and accessibility; PDF render verification"
+  },
+  "decisions": [
+    {
+      "topic": "Ticket identity",
+      "decision": "Create one stable Ticket UUID per seat entitlement; one Booking per event and normalized email. Never use email as a single-person identity."
+    },
+    {
+      "topic": "Import optional attendee_names",
+      "decision": "Do not enable attendee_names CSV column in version 1. Provide post-import individual attendee editing; reject unsupported columns with a useful message."
+    },
+    {
+      "topic": "Import quantities",
+      "decision": "Replace total entitlement by default. Never add silently. Duplicate-in-file reject by default; optional aggregate and additive modes require explicit preview."
+    },
+    {
+      "topic": "Capacity",
+      "decision": "Derive capacity from active usable seat records. Initial table count/default chairs are creation inputs, not authoritative capacity fields."
+    },
+    {
+      "topic": "Versioning",
+      "decision": "Maintain event roster_revision and layout_revision. Seating mutations increment layout_revision; ticket entitlement changes increment roster_revision and layout_revision when seating/publication data changes."
+    },
+    {
+      "topic": "Lock strategy",
+      "decision": "Begin with an Event row lock as the consistent outer lock for all event mutations, then tables, seats, tickets and holds in deterministic order. This serializes writes safely; optimize only if benchmarks require it without weakening invariants."
+    },
+    {
+      "topic": "Idempotency",
+      "decision": "Unique organization + operation + idempotency key; store request digest and response. Reuse with different payload returns 409. Acquire and complete the record in the same transaction as the mutation."
+    },
+    {
+      "topic": "Publication",
+      "decision": "Use immutable serialized snapshots for guest views and exports; ticket validity and token revocation are checked against live records."
+    },
+    {
+      "topic": "Outbox uniqueness",
+      "decision": "Reference a non-null immutable campaign audience/snapshot record so logical send uniqueness remains enforced even for campaigns that have no layout publication."
+    },
+    {
+      "topic": "Email guarantees",
+      "decision": "SMTP acceptance means submitted, not delivered. Ambiguous acceptance requires reconciliation or explicit resend; never promise exactly-once SMTP delivery."
+    },
+    {
+      "topic": "Check-in codes",
+      "decision": "Use revocable opaque per-ticket QR tokens separate from booking-view tokens. No personally identifying QR payload."
+    },
+    {
+      "topic": "Report engine",
+      "decision": "Choose and lock a maintained HTML-to-PDF engine, verify SVG support and install its system libraries in Docker. Deny arbitrary network/local-file fetching."
+    }
+  ],
+  "invariants": [
+    "One current occupancy per seat and at most one current seat per ticket.",
+    "SeatOccupancy contains exactly one of ticket_id or hold_id.",
+    "Every related object belongs to the same event and organization.",
+    "Blocked/retired seats and cancelled tickets cannot be assigned.",
+    "Occupied furniture and seated/checked-in tickets cannot be silently removed.",
+    "Whole-table holds cover chairs added while the hold remains active.",
+    "Expired holds can be released during the assignment transaction even when beat is stopped.",
+    "Guests, exports, job status and APIs enforce object scope; UUID secrecy is not authorization.",
+    "Draft edits do not change published snapshots.",
+    "Email intent and job progress survive broker loss through PostgreSQL records.",
+    "All successful mutations record actor, reason where required, revision and audit details."
+  ],
+  "tasks": [
+    {
+      "id": "T01",
+      "title": "Verify scaffold and establish reproducible development environment",
+      "status": "pending",
+      "depends_on": [],
+      "files_to_create_or_modify": [
+        "requirements.txt",
+        "requirements-dev.txt",
+        "Dockerfile",
+        "compose.dev.yaml",
+        "pytest.ini",
+        "tests/test_health.py",
+        "IMPLEMENTATION_STATUS.json"
+      ],
+      "implementation_steps": [
+        "Inspect current configuration and run Compose config validation.",
+        "Add locked runtime/test dependencies and test settings using PostgreSQL.",
+        "Build and boot dev services when Docker is available; run migrate, check and readiness smoke tests.",
+        "Create status tracking with task IDs and evidence; keep missing runtime access visible."
+      ],
+      "acceptance_criteria": [
+        "A clean checkout has documented reproducible startup.",
+        "Django checks and health tests pass against PostgreSQL/Redis, or environmental blockers are explicitly recorded."
+      ],
+      "specification_acceptance_ids": []
+    },
+    {
+      "id": "T02",
+      "title": "Authentication, organization isolation and staff roles",
+      "status": "pending",
+      "depends_on": [
+        "T01"
+      ],
+      "files_to_create_or_modify": [
+        "accounts/models.py",
+        "accounts/services.py",
+        "accounts/permissions.py",
+        "accounts/views.py",
+        "accounts/templates/",
+        "accounts/tests/",
+        "config/settings.py"
+      ],
+      "implementation_steps": [
+        "Decide custom User before first application migrations; avoid resetting existing databases.",
+        "Implement Organization, Membership and explicit EventGrant permissions.",
+        "Add session login/logout/password reset and organization selection.",
+        "Enforce organization/event access centrally and require MFA for privileged production roles.",
+        "Add throttling and scoped queryset helpers; test guessed UUIDs and role escalation."
+      ],
+      "acceptance_criteria": [
+        "Every role matches the specification permission matrix.",
+        "Cross-tenant access is denied even with known object IDs.",
+        "Privileged production login cannot bypass MFA."
+      ],
+      "specification_acceptance_ids": [
+        "A11"
+      ]
+    },
+    {
+      "id": "T03",
+      "title": "Audited transactional mutation infrastructure",
+      "status": "pending",
+      "depends_on": [
+        "T02"
+      ],
+      "files_to_create_or_modify": [
+        "audit/models.py",
+        "audit/services.py",
+        "core/errors.py",
+        "core/idempotency.py",
+        "core/tests/"
+      ],
+      "implementation_steps": [
+        "Implement append-only audit events with PII-safe payloads and request IDs.",
+        "Implement idempotency records with unique keys and request hashes.",
+        "Define consistent HTTP validation/conflict errors and transaction/lock helpers.",
+        "Set a global lock acquisition order and ensure background/admin writes use it."
+      ],
+      "acceptance_criteria": [
+        "Failed transactions leave no successful audit/mutation records.",
+        "Same idempotency key and payload returns original outcome; changed payload returns 409.",
+        "Audit access is organization-scoped and unauthorized mutation is prevented."
+      ],
+      "specification_acceptance_ids": []
+    },
+    {
+      "id": "T04",
+      "title": "Event CRUD and lifecycle",
+      "status": "pending",
+      "depends_on": [
+        "T03"
+      ],
+      "files_to_create_or_modify": [
+        "events/models.py",
+        "events/forms.py",
+        "events/services.py",
+        "events/views.py",
+        "events/urls.py",
+        "events/templates/",
+        "events/tests/"
+      ],
+      "implementation_steps": [
+        "Implement all event metadata, timezone/date validation and creation defaults.",
+        "Add list/search/filter, create/edit/detail and archive/reopen/cancel actions.",
+        "Implement lifecycle guards and cancellation hooks for future scheduled campaigns.",
+        "Implement safe logo upload decode/re-encode with type/dimension/size limits.",
+        "Add responsive HTML/CSS shell, navigation and role-aware actions."
+      ],
+      "acceptance_criteria": [
+        "Event details persist correctly and timezone/DST cases are tested.",
+        "Archive is reversible; destructive deletion is not ordinary CRUD.",
+        "Unsafe logo uploads are rejected."
+      ],
+      "specification_acceptance_ids": []
+    },
+    {
+      "id": "T05",
+      "title": "Room, tables, chairs and geometry services",
+      "status": "pending",
+      "depends_on": [
+        "T04"
+      ],
+      "files_to_create_or_modify": [
+        "layouts/models.py",
+        "layouts/geometry.py",
+        "layouts/services.py",
+        "layouts/forms.py",
+        "layouts/views.py",
+        "layouts/tests/"
+      ],
+      "implementation_steps": [
+        "Implement Room, RoomObstacle, EventTable and Seat with stable UUIDs and label uniqueness.",
+        "Implement table/chair creation, bulk generation, duplication, retirement and derived capacity.",
+        "Represent chair coordinates relative to table center; validate finite numeric values, positive dimensions and polygons.",
+        "Validate transformed table/chair footprints inside room and overlap; distinguish hard errors from overrideable clearance warnings.",
+        "Protect active occupancies through shared mutation hooks used by T08."
+      ],
+      "acceptance_criteria": [
+        "10 tables with 8 chairs yields 80 seats; adding 2 yields 82.",
+        "Moving/rotating or renaming preserves seat identity.",
+        "Invalid or overlapping geometry is rejected and safe clearance overrides are audited."
+      ],
+      "specification_acceptance_ids": [
+        "A01",
+        "A02"
+      ]
+    },
+    {
+      "id": "T06",
+      "title": "Bookings, tickets and quantity reconciliation",
+      "status": "pending",
+      "depends_on": [
+        "T05"
+      ],
+      "files_to_create_or_modify": [
+        "guests/models.py",
+        "guests/services.py",
+        "guests/forms.py",
+        "guests/views.py",
+        "guests/tests/"
+      ],
+      "implementation_steps": [
+        "Implement Booking uniqueness by event + normalized email, retaining original email.",
+        "Implement stable Ticket UUIDs and never-reused per-booking sequence allocation.",
+        "Implement entitlement increases/decreases, cancellation and individual attendee editing.",
+        "Remove eligible unassigned/unchecked-in tickets first; require explicit resolution of protected tickets.",
+        "Add searchable party and per-ticket list views."
+      ],
+      "acceptance_criteria": [
+        "A four-ticket booking creates four independent tickets.",
+        "Ticket reductions cannot silently remove occupied or checked-in tickets.",
+        "Existing ticket identities remain stable when quantity or names change."
+      ],
+      "specification_acceptance_ids": [
+        "A03",
+        "A05"
+      ]
+    },
+    {
+      "id": "T07",
+      "title": "CSV upload, preview and transactional commit",
+      "status": "pending",
+      "depends_on": [
+        "T06"
+      ],
+      "files_to_create_or_modify": [
+        "guests/imports.py",
+        "guests/tasks.py",
+        "guests/models.py",
+        "guests/templates/guests/imports/",
+        "guests/tests/test_imports.py"
+      ],
+      "implementation_steps": [
+        "Implement ImportBatch/ImportRow and private input storage; enforce 5 MB, 10000 rows and configured quantity limits.",
+        "Parse UTF-8/BOM, quoted CSV and CRLF; require email and ticket_count.",
+        "Implement default duplicate rejection, explicit aggregation/additive modes and default replace-total mode.",
+        "Persist preview changes/errors and roster revision; commit with idempotency and locked revalidation.",
+        "Implement deliberate valid-row subset and separate replace-roster preview flows; reject silent partial imports.",
+        "Add digest replay handling and downloadable sanitized error report."
+      ],
+      "acceptance_criteria": [
+        "Reimporting the default file does not double quantities.",
+        "Invalid default batches create no partial changes.",
+        "Roster changes after preview yield conflict instead of stale commit.",
+        "Absence from ordinary import does not delete an existing booking."
+      ],
+      "specification_acceptance_ids": [
+        "A03",
+        "A04",
+        "A05"
+      ]
+    },
+    {
+      "id": "T08",
+      "title": "Reservation and assignment transaction engine",
+      "status": "pending",
+      "depends_on": [
+        "T06",
+        "T03"
+      ],
+      "files_to_create_or_modify": [
+        "seating/models.py",
+        "seating/services.py",
+        "seating/views.py",
+        "seating/urls.py",
+        "seating/tests/test_concurrency.py",
+        "layouts/services.py",
+        "guests/services.py"
+      ],
+      "implementation_steps": [
+        "Implement Hold and SeatOccupancy with unique seat, unique nullable ticket and XOR database constraints.",
+        "Implement seat/multi-seat/whole-table hold, expiry, release, assign, unassign, group assign and swap.",
+        "Use outer event lock and deterministic row locks for all related furniture, ticket and hold mutations.",
+        "Make chair creation inherit active table hold; retire/shrink workflows fail with impact report unless explicit resolution supplied.",
+        "Consume expired holds under lock; implement booking-specific holds and reason-required override policy.",
+        "Increment revisions and audit all changes; catch uniqueness failures as conflicts."
+      ],
+      "acceptance_criteria": [
+        "Concurrent same-seat and same-ticket requests cannot create duplicate assignments.",
+        "Table hold races with new chairs/assignment preserve coverage.",
+        "Atomic swaps roll back completely on failure.",
+        "Blocked/retired/cross-event assignments fail."
+      ],
+      "specification_acceptance_ids": [
+        "A02",
+        "A05",
+        "A06",
+        "A07",
+        "A08",
+        "A09",
+        "A11"
+      ]
+    },
+    {
+      "id": "T09",
+      "title": "Layout API and accessible seating forms",
+      "status": "pending",
+      "depends_on": [
+        "T08",
+        "T07"
+      ],
+      "files_to_create_or_modify": [
+        "layouts/views.py",
+        "layouts/urls.py",
+        "layouts/serializers.py",
+        "seating/forms.py",
+        "seating/templates/",
+        "layouts/tests/"
+      ],
+      "implementation_steps": [
+        "Implement geometry GET/PATCH and expected-version conflicts.",
+        "Add list-based assignment, group-preview, hold/release and atomic swap forms.",
+        "Provide unassigned search, selected-table inspector data and revision polling.",
+        "Return safe error objects with current version and changed objects; keep server validation authoritative."
+      ],
+      "acceptance_criteria": [
+        "Stale writes return HTTP 409 without losing other edits.",
+        "All graphical actions have usable form/list equivalents.",
+        "Unauthorized users cannot mutate through JSON endpoints."
+      ],
+      "specification_acceptance_ids": [
+        "A10",
+        "A11",
+        "A19"
+      ]
+    },
+    {
+      "id": "T10",
+      "title": "Interactive SVG room and seating editor",
+      "status": "pending",
+      "depends_on": [
+        "T09"
+      ],
+      "files_to_create_or_modify": [
+        "layouts/static/layouts/editor/",
+        "layouts/static/layouts/editor.css",
+        "layouts/templates/layouts/editor.html",
+        "tests/browser/test_editor.py"
+      ],
+      "implementation_steps": [
+        "Implement canvas, palette, legend, inspector and searchable unassigned sidebar.",
+        "Add pan/zoom, snap, fit, rotation, alignment, multi-select and keyboard movement.",
+        "Support ticket-to-chair and party-to-table drag/drop with exact assignment preview.",
+        "Implement command-based undo/redo through validated versioned server operations.",
+        "Handle conflicts with refresh/reapply UI; never silently overwrite.",
+        "Use zoom detail reduction and incremental rendering for large rooms."
+      ],
+      "acceptance_criteria": [
+        "Real interactions persist after refresh.",
+        "Moving tables moves their chairs without changing assignments.",
+        "Keyboard user can create/select/assign/unassign.",
+        "Status is understandable without color alone."
+      ],
+      "specification_acceptance_ids": [
+        "A10",
+        "A19"
+      ]
+    },
+    {
+      "id": "T11",
+      "title": "Immutable publications and event duplication",
+      "status": "pending",
+      "depends_on": [
+        "T10"
+      ],
+      "files_to_create_or_modify": [
+        "layouts/models.py",
+        "layouts/publication_service.py",
+        "layouts/templates/layouts/publications/",
+        "events/services.py",
+        "layouts/tests/test_publications.py"
+      ],
+      "implementation_steps": [
+        "Create immutable versioned geometry/seat/assignment snapshots in one locked transaction.",
+        "Validate capacity, room geometry and acknowledged unassigned tickets before publishing.",
+        "Keep draft changes separate and compute affected-booking diffs between publications.",
+        "Flag republish required after relevant cancellation; live ticket checks override stale snapshot access.",
+        "Implement event duplication with metadata/geometry only and new object UUIDs."
+      ],
+      "acceptance_criteria": [
+        "Old publications remain unchanged after later edits.",
+        "Publishing never sends emails implicitly.",
+        "Changed-seat recipients can be derived accurately."
+      ],
+      "specification_acceptance_ids": [
+        "A12"
+      ]
+    },
+    {
+      "id": "T12",
+      "title": "Guest seating access and ticket check-in",
+      "status": "pending",
+      "depends_on": [
+        "T11"
+      ],
+      "files_to_create_or_modify": [
+        "guests/tokens.py",
+        "guests/templates/guests/seating.html",
+        "checkin/models.py",
+        "checkin/services.py",
+        "checkin/views.py",
+        "checkin/templates/",
+        "checkin/tests/"
+      ],
+      "implementation_steps": [
+        "Create high-entropy hashed, expiring/revocable booking-view and per-ticket QR tokens with separate purposes.",
+        "Expose only the booking's published details and recheck live ticket validity.",
+        "Implement mobile ticket lookup, QR check-in, partial-party arrivals and reasoned undo.",
+        "Prevent URL/token leakage through logs and referrers; throttle token endpoints."
+      ],
+      "acceptance_criteria": [
+        "Guest token cannot access another booking or staff data.",
+        "Repeated scan is idempotent and cancelled tickets fail.",
+        "Two of four party tickets may check in independently."
+      ],
+      "specification_acceptance_ids": [
+        "A11",
+        "A12",
+        "A17"
+      ]
+    },
+    {
+      "id": "T13",
+      "title": "Campaign drafts, previews and durable mail outbox",
+      "status": "pending",
+      "depends_on": [
+        "T11",
+        "T12"
+      ],
+      "files_to_create_or_modify": [
+        "communications/models.py",
+        "communications/services.py",
+        "communications/templates/",
+        "communications/views.py",
+        "communications/tasks.py",
+        "communications/tests/"
+      ],
+      "implementation_steps": [
+        "Implement versioned HTML/plain-text templates for invitation, seating, changes, reminders and cancellations.",
+        "Snapshot recipient audience and publication; implement preview, test, send/schedule and cancellation actions.",
+        "Store unique logical EmailDelivery records and attempt history in PostgreSQL.",
+        "Dispatch after commit plus periodic pending-row scan; claim rows safely and recheck cancellations/suppression.",
+        "Implement bounded transient retry, rate limits and explicit ambiguous-acceptance state.",
+        "Correlate SendGrid events using non-PII delivery UUID metadata; keep one recipient per message."
+      ],
+      "acceptance_criteria": [
+        "MailDev captures expected content and exactly one recipient per logical delivery.",
+        "SMTP submitted is not marked delivered.",
+        "Redis loss cannot erase queued business intent.",
+        "Ambiguous acceptance does not trigger blind duplicate send."
+      ],
+      "specification_acceptance_ids": [
+        "A13",
+        "A15"
+      ]
+    },
+    {
+      "id": "T14",
+      "title": "SendGrid delivery webhooks and suppression",
+      "status": "pending",
+      "depends_on": [
+        "T13"
+      ],
+      "files_to_create_or_modify": [
+        "communications/webhooks.py",
+        "communications/provider.py",
+        "communications/models.py",
+        "communications/tests/test_webhooks.py",
+        "config/urls.py"
+      ],
+      "implementation_steps": [
+        "Verify raw-body signatures using the documented SendGrid algorithm/library and configured public key.",
+        "Apply bounded timestamp tolerance, event deduplication and idempotent receipt storage.",
+        "Handle out-of-order delivery/bounce/complaint events without inappropriate state regression.",
+        "Implement suppression and restricted explicit retry/reconciliation actions.",
+        "Add narrow CSRF exemption only on the signed webhook route; configure staging delivery test."
+      ],
+      "acceptance_criteria": [
+        "Invalid signatures, stale replays and malformed payloads cannot change delivery state.",
+        "Duplicate events have one effect.",
+        "Suppressed recipients are excluded from later sends.",
+        "Real-provider integration result is recorded separately from mocked tests."
+      ],
+      "specification_acceptance_ids": [
+        "A14"
+      ]
+    },
+    {
+      "id": "T15",
+      "title": "Printing, PDF and CSV export",
+      "status": "pending",
+      "depends_on": [
+        "T11",
+        "T12"
+      ],
+      "files_to_create_or_modify": [
+        "reports/models.py",
+        "reports/services.py",
+        "reports/tasks.py",
+        "reports/templates/",
+        "reports/static/reports/print.css",
+        "reports/tests/",
+        "Dockerfile"
+      ],
+      "implementation_steps": [
+        "Implement room plans, table/alphabetical rosters, table/place cards, seating slips and operational reports.",
+        "Support A4/A3, landscape, fit and tiled printing with snapshot/version labels.",
+        "Generate PDFs asynchronously from a consistent publication or explicitly labelled current-data snapshot.",
+        "Implement private authenticated expiring downloads and per-field export permissions.",
+        "Escape spreadsheet formula text; default public outputs to no email/private notes.",
+        "Restrict PDF asset loading to controlled local/static inputs and review actual rendered pages."
+      ],
+      "acceptance_criteria": [
+        "PDFs and print pages have no clipped text or missing SVG furniture.",
+        "Unauthorized users cannot fetch artifacts by UUID/path.",
+        "Public documents omit private fields.",
+        "CSV export cells do not execute spreadsheet formulas."
+      ],
+      "specification_acceptance_ids": [
+        "A11",
+        "A16"
+      ]
+    },
+    {
+      "id": "T16",
+      "title": "Schedules, cleanup and recovery jobs",
+      "status": "pending",
+      "depends_on": [
+        "T07",
+        "T08",
+        "T13",
+        "T15"
+      ],
+      "files_to_create_or_modify": [
+        "core/tasks.py",
+        "config/celery.py",
+        "config/settings.py",
+        "communications/recovery.py",
+        "core/tests/test_recovery.py"
+      ],
+      "implementation_steps": [
+        "Register periodic hold expiry, due-mail dispatch, abandoned-claim reconciliation and file/retention cleanup.",
+        "Store due times/progress in PostgreSQL; keep distant schedules out of Celery ETA queues.",
+        "Define idempotent task boundaries, time limits and actor/tenant rechecks.",
+        "Handle cancellation of events and revocation of user permissions between enqueue and execution.",
+        "Implement owner-reviewed data export/deletion with configurable retention and protected audit history."
+      ],
+      "acceptance_criteria": [
+        "Stopping beat does not block reuse of expired holds.",
+        "Worker/broker failure can resume safe jobs without partial business commits.",
+        "Retention respects live events, policy settings and artifact access."
+      ],
+      "specification_acceptance_ids": [
+        "A09",
+        "A15"
+      ]
+    },
+    {
+      "id": "T17",
+      "title": "Production container and database hardening",
+      "status": "pending",
+      "depends_on": [
+        "T14",
+        "T15",
+        "T16"
+      ],
+      "files_to_create_or_modify": [
+        "compose.prod.yaml",
+        "compose.dev.yaml",
+        "Dockerfile",
+        "deploy/",
+        "config/settings.py",
+        "README.md"
+      ],
+      "implementation_steps": [
+        "Separate runtime non-superuser DB credentials from migration-owner credentials using explicit secret mounts.",
+        "Create idempotent documented provisioning/grants; runtime cannot CREATE/DROP schema or bypass ownership.",
+        "Lock dependency versions and service image digests after integration testing.",
+        "Ensure non-root processes can write only intended private/static/beat/tmp paths; validate secret readability without printing secrets.",
+        "Verify proxy trust, HTTPS, security headers, CSRF, private files, health and worker checks.",
+        "Keep migrations/collectstatic in release job; document maintenance deployment and safe rollback."
+      ],
+      "acceptance_criteria": [
+        "Runtime DB role has only required permissions and migrations work with release role.",
+        "Fresh dev and production configurations validate.",
+        "Staging image builds, migration, HTTPS login and worker tests have recorded evidence."
+      ],
+      "specification_acceptance_ids": [
+        "A20"
+      ]
+    },
+    {
+      "id": "T18",
+      "title": "Monitoring, backups and restore rehearsal",
+      "status": "pending",
+      "depends_on": [
+        "T17"
+      ],
+      "files_to_create_or_modify": [
+        "core/logging.py",
+        "deploy/backup/",
+        "deploy/monitoring/",
+        "docs/operations.md",
+        "tests/test_observability.py"
+      ],
+      "implementation_steps": [
+        "Add structured redacted logs, request/job IDs and protected metrics endpoints.",
+        "Monitor error rate, latency, queue age, worker heartbeat, disk and backup freshness.",
+        "Provide encrypted off-host DB/private-file backup and retention scripts using dedicated credentials.",
+        "Document broker recovery/outbox reconciliation and provider outage response.",
+        "Restore into an isolated test environment with real-email sending disabled and verify seats/private files."
+      ],
+      "acceptance_criteria": [
+        "Backups are usable, not just created.",
+        "Restore rehearsal records measured RPO/RTO and checks business state.",
+        "Secrets, email bodies and token URLs are absent from ordinary logs."
+      ],
+      "specification_acceptance_ids": [
+        "A18"
+      ]
+    },
+    {
+      "id": "T19",
+      "title": "Full-system acceptance, accessibility and performance",
+      "status": "pending",
+      "depends_on": [
+        "T18",
+        "T10"
+      ],
+      "files_to_create_or_modify": [
+        "tests/browser/",
+        "tests/integration/",
+        "tests/load/",
+        "docs/acceptance-results.md"
+      ],
+      "implementation_steps": [
+        "Run A01-A20 with evidence links, build identifiers and timestamps.",
+        "Exercise PostgreSQL concurrency with separate connections, tenant access and stale revisions.",
+        "Test timezone/DST edges, injection uploads, CSV limits and security failures.",
+        "Run keyboard/screen-reader and mobile workflows plus PDF visual review.",
+        "Benchmark 10000 tickets, 1000 tables and 20 staff users on documented hardware.",
+        "Fix regressions and rerun affected checks; distinguish targets from measured results."
+      ],
+      "acceptance_criteria": [
+        "All mandatory acceptance cases pass or are explicitly release-blocked.",
+        "p95 page/API <500 ms, assignment <750 ms, import <60 s and initial usable layout <3 s on the reference workload, or reviewed corrective work remains open.",
+        "No known data-integrity or tenant-isolation failures remain."
+      ],
+      "specification_acceptance_ids": [
+        "A01",
+        "A02",
+        "A03",
+        "A04",
+        "A05",
+        "A06",
+        "A07",
+        "A08",
+        "A09",
+        "A10",
+        "A11",
+        "A12",
+        "A13",
+        "A14",
+        "A15",
+        "A16",
+        "A17",
+        "A18",
+        "A19",
+        "A20"
+      ]
+    },
+    {
+      "id": "T20",
+      "title": "Developer and operator handover",
+      "status": "pending",
+      "depends_on": [
+        "T19"
+      ],
+      "files_to_create_or_modify": [
+        "README.md",
+        "docs/user-guide.md",
+        "docs/operations.md",
+        "IMPLEMENTATION_STATUS.json"
+      ],
+      "implementation_steps": [
+        "Document exact startup, seed/demo, test, import, seating, publish, mail and print workflows.",
+        "Provide synthetic demo fixtures and accessible user walkthrough.",
+        "Document configuration, secret rotation, backups, rollback and remaining limitations.",
+        "Reconcile actual implementation with specification and mark only validated tasks complete."
+      ],
+      "acceptance_criteria": [
+        "A new developer can run the complete local workflow from documented commands.",
+        "Final report names actual checks, blocked external checks and deployment prerequisites.",
+        "No required business workflow remains a stub."
+      ],
+      "specification_acceptance_ids": []
+    }
+  ],
+  "validation_commands": {
+    "notes": "Run from project root. Commands assume T01 adds pytest dependencies; production commands require prepared secrets/config and an authorized target. These are validation instructions, not evidence they have run.",
+    "development": [
+      "docker compose -f compose.dev.yaml config --quiet",
+      "docker compose -f compose.dev.yaml up --build -d",
+      "docker compose -f compose.dev.yaml exec web python manage.py check",
+      "docker compose -f compose.dev.yaml exec web python manage.py makemigrations --check --dry-run",
+      "docker compose -f compose.dev.yaml exec web pytest",
+      "docker compose -f compose.dev.yaml exec worker celery -A config inspect ping"
+    ],
+    "production_configuration": [
+      "docker compose --env-file .env.prod.example -f compose.prod.yaml config --quiet"
+    ],
+    "staging_only": [
+      "docker compose --env-file .env.prod -f compose.prod.yaml run --rm web python manage.py check --deploy"
+    ],
+    "additional_checks_to_implement": [
+      "Browser suite with Playwright and documented browser runtime",
+      "Concurrency integration tests using real PostgreSQL transactions",
+      "PDF page rendering and visual inspection",
+      "Load workload and measured results",
+      "Isolated restore rehearsal",
+      "MailDev assertions and separately authorized real SendGrid smoke test"
+    ]
+  },
+  "release_gates": [
+    {
+      "gate": "Integrity",
+      "requires": [
+        "A02",
+        "A05",
+        "A06",
+        "A07",
+        "A08",
+        "A09",
+        "A10"
+      ],
+      "blocking": true
+    },
+    {
+      "gate": "Access control",
+      "requires": [
+        "A11",
+        "A17",
+        "A20"
+      ],
+      "blocking": true
+    },
+    {
+      "gate": "Core workflows",
+      "requires": [
+        "A01",
+        "A03",
+        "A04",
+        "A12",
+        "A13",
+        "A16",
+        "A19"
+      ],
+      "blocking": true
+    },
+    {
+      "gate": "Delivery and recovery",
+      "requires": [
+        "A14",
+        "A15",
+        "A18"
+      ],
+      "blocking": true
+    }
+  ],
+  "definition_of_done": [
+    "All T01-T20 implementation requirements fulfilled.",
+    "A01-A20 verified on staging; missing credentials or infrastructure produce explicit release blockers, never assumed passes.",
+    "Migrations and constraints committed; dependency locks and tested container images recorded.",
+    "UI workflows persist correctly and meet keyboard-accessibility requirements.",
+    "Production secrets, least-privilege roles, monitoring and restore procedures validated.",
+    "No real guest sends or live deployments occur without authorization."
+  ],
+  "suggested_cursor_prompt": "Read CURSOR_IMPLEMENTATION_PLAN.json, SPECIFICATION.md and README.md. Inspect the supplied scaffold and implement the plan in dependency order, starting at the first incomplete task. Maintain IMPLEMENTATION_STATUS.json with actual evidence. Build working end-to-end features and run relevant validation; continue independent work if an external check is blocked. Follow the plan's invariants, scope and authorization boundaries."
+}

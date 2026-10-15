@@ -1,0 +1,9 @@
+.git
+.env*
+secrets/
+__pycache__/
+*.pyc
+private/
+staticfiles/
+run/
+*.zip
