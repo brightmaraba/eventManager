@@ -34,6 +34,19 @@ docker compose -f compose.dev.yaml exec web python manage.py check
 docker compose -f compose.dev.yaml exec web pytest -q
 ```
 
+The default test run skips browser and reference-workload tests. UI checks need Playwright's browsers inside the web container. Install them once as root, then run the suite with the browser cache visible to that user:
+
+```sh
+docker compose -f compose.dev.yaml exec -u root web python -m playwright install --with-deps chromium firefox webkit
+docker compose -f compose.dev.yaml exec -u root -e PLAYWRIGHT_BROWSERS_PATH=/root/.cache/ms-playwright -e DJANGO_ALLOW_ASYNC_UNSAFE=true web pytest -o addopts="-ra --tb=short" --reuse-db -m browser tests/browser --browser chromium --browser firefox --browser webkit
+```
+
+The 1,000-table timing check is separate:
+
+```sh
+docker compose -f compose.dev.yaml exec web pytest -o addopts="-ra --tb=short" -m slow tests/test_ui_workload.py -s
+```
+
 Tests must run inside the web container. The database host name is `db`.
 
 Stop the stack without deleting data:

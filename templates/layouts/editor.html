@@ -8,8 +8,8 @@
   <div class="legend" aria-label="Seat status">
     <span>Available</span><span>Held</span><span>Assigned</span><span>Blocked</span><span>Checked in</span>
   </div>
-  <div class="editor-shell" data-editor data-event-id="{{ event.id }}" data-can-edit="{{ can_edit|yesno:'yes,no' }}">
-    <div class="toolbar">
+  <div class="editor-shell" data-editor data-event-id="{{ event.id }}" data-can-edit="{{ can_edit|yesno:'yes,no' }}" aria-busy="true">
+    <div class="toolbar glass">
       <button type="button" id="zoom-in">Zoom in</button>
       <button type="button" id="zoom-out">Zoom out</button>
       <button type="button" id="fit-room">Fit room</button>

@@ -3,7 +3,7 @@
 {% block content %}
   <h1>{{ event.name }}</h1>
   <p>{{ event.get_status_display }} · {{ event.venue_name }}, {{ event.locality }} · {{ local.starts_at }} {{ event.timezone }}</p>
-  <section class="metrics" aria-label="Event totals">
+  <section class="metrics glass" aria-label="Event totals">
     <div><strong>{{ metrics.tickets }}</strong> Tickets</div>
     <div><strong>{{ metrics.capacity }}</strong> Capacity</div>
     <div><strong>{{ metrics.blocked }}</strong> Blocked</div>
@@ -22,7 +22,7 @@
     {% if can_export %}<a href="{% url 'exports' event.id %}">Exports</a>{% endif %}
     {% if can_manage %}<a href="{% url 'event-edit' event.id %}">Edit details</a>{% endif %}
   </nav>
-  {% if event.republish_required %}<p role="status">Seating changed after the last publication. Publish again before relying on guest links.</p>{% endif %}
+  {% if event.republish_required %}<p class="status" role="status">Seating changed after the last publication. Publish again before relying on guest links.</p>{% endif %}
   {% if can_manage %}
     <form method="post" action="{% url 'event-action' event.id 'archive' %}">{% csrf_token %}<button type="submit">Archive</button></form>
     <form method="post" action="{% url 'event-action' event.id 'unarchive' %}">{% csrf_token %}<button class="secondary" type="submit">Restore archive</button></form>

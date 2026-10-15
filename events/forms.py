@@ -2,6 +2,18 @@ from zoneinfo import available_timezones
 
 from django import forms
 
+LOCAL_DATETIME_FORMATS = ["%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d %H:%M:%S"]
+
+
+def local_datetime_field(*, label, required=True):
+    return forms.DateTimeField(
+        label=label,
+        required=required,
+        input_formats=LOCAL_DATETIME_FORMATS,
+        widget=forms.DateTimeInput(attrs={"type": "datetime-local"}, format="%Y-%m-%dT%H:%M"),
+        error_messages={"invalid": "Enter a date and time."},
+    )
+
 
 class EventForm(forms.Form):
     name = forms.CharField(max_length=200)
@@ -17,9 +29,9 @@ class EventForm(forms.Form):
     contact_email = forms.EmailField(required=False)
     contact_phone = forms.CharField(max_length=40, required=False)
     timezone = forms.ChoiceField(choices=[])
-    starts_at = forms.CharField(label="Starts")
-    ends_at = forms.CharField(label="Ends")
-    doors_open_at = forms.CharField(required=False, label="Doors open")
+    starts_at = local_datetime_field(label="Starts")
+    ends_at = local_datetime_field(label="Ends")
+    doors_open_at = local_datetime_field(label="Doors open", required=False)
     initial_table_count = forms.IntegerField(min_value=0, initial=0)
     default_seats_per_table = forms.IntegerField(min_value=1, initial=8)
     accessibility_notes = forms.CharField(required=False, widget=forms.Textarea(attrs={"rows": 2}))

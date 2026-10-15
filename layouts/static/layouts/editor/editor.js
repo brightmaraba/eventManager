@@ -19,6 +19,7 @@ function headers(json) {
 }
 
 async function load() {
+  root.setAttribute("aria-busy", "true");
   const response = await fetch(`/events/${eventId}/layout.json`, { headers: headers(false) });
   state = await response.json();
   conflict.hidden = true;
@@ -45,8 +46,7 @@ function render() {
   const detail = scale >= 0.55;
   state.tables.forEach((table) => {
     const group = document.createElementNS("http://www.w3.org/2000/svg", "g");
-    group.setAttribute("tabindex", "0");
-    group.setAttribute("role", "button");
+    group.setAttribute("role", "group");
     group.setAttribute("aria-label", `Table ${table.label}`);
     group.dataset.tableId = table.id;
     const shape = document.createElementNS("http://www.w3.org/2000/svg", table.shape === "round" ? "circle" : "rect");
@@ -97,6 +97,7 @@ function render() {
   });
   canvas.append(viewport);
   renderTickets();
+  root.setAttribute("aria-busy", "false");
 }
 
 function world(table, relX, relY) {
@@ -157,6 +158,7 @@ async function moveTable(table, x, y, rotation, remember) {
     const data = await response.json();
     if (response.status === 409) {
       conflict.hidden = false;
+      render();
       return;
     }
     state = data;
@@ -171,23 +173,32 @@ function startDrag(event, table) {
     }
     return;
   }
+  event.preventDefault();
   selectedTable = table;
   const start = event;
   const origin = { x: table.x, y: table.y };
+  const group = event.currentTarget;
+  let finished = false;
   function move(pointer) {
     const rect = canvas.getBoundingClientRect();
     const dx = (pointer.clientX - start.clientX) / rect.width * state.room.width_m;
     const dy = (pointer.clientY - start.clientY) / rect.height * state.room.height_m;
     table.x = Math.round((origin.x + dx) * 4) / 4;
     table.y = Math.round((origin.y + dy) * 4) / 4;
-    render();
+    group.setAttribute("transform", `translate(${table.x - origin.x} ${table.y - origin.y})`);
   }
   function up() {
+    if (finished) return;
+    finished = true;
     canvas.removeEventListener("pointermove", move);
-    moveTable(table, table.x, table.y, table.rotation, true);
+    canvas.removeEventListener("pointerup", up);
+    canvas.removeEventListener("pointercancel", up);
+    undo.push({ id: table.id, x: origin.x, y: origin.y, rotation: table.rotation });
+    moveTable(table, table.x, table.y, table.rotation, false);
   }
   canvas.addEventListener("pointermove", move);
-  canvas.addEventListener("pointerup", up, { once: true });
+  canvas.addEventListener("pointerup", up);
+  canvas.addEventListener("pointercancel", up);
 }
 
 function onTableKey(event, table) {

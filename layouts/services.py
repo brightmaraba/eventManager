@@ -266,28 +266,44 @@ def set_seat_availability(*, event, seat_id, availability, actor, request_id):
 
 
 def layout_payload(event):
+    from django.db.models import Prefetch
+
+    from checkin.models import CheckIn
     from guests.models import Ticket
+    from layouts.models import Seat
     from seating.models import SeatOccupancy
 
     room = event.rooms.first()
     tables = []
     assigned = set()
-    for table in event.tables.filter(retired_at__isnull=True).prefetch_related("seats"):
+    active_tables = list(event.tables.filter(retired_at__isnull=True).prefetch_related(
+        Prefetch("seats", queryset=Seat.objects.filter(retired_at__isnull=True)),
+    ))
+    seat_ids = [seat.id for table in active_tables for seat in table.seats.all()]
+    if seat_ids:
+        occupancies = {
+            item.seat_id: item
+            for item in SeatOccupancy.objects.filter(seat_id__in=seat_ids).select_related("ticket__booking", "hold")
+        }
+        ticket_ids = [item.ticket_id for item in occupancies.values() if item.ticket_id]
+        checked_in_ids = set(
+            CheckIn.objects.filter(ticket_id__in=ticket_ids, undone_at__isnull=True).values_list("ticket_id", flat=True)
+        ) if ticket_ids else set()
+    else:
+        occupancies = {}
+        checked_in_ids = set()
+    for table in active_tables:
         seats = []
-        for seat in table.seats.filter(retired_at__isnull=True):
-            occupancy = SeatOccupancy.objects.filter(seat=seat).select_related("ticket__booking", "hold").first()
+        for seat in table.seats.all():
+            occupancy = occupancies.get(seat.id)
             occupant = None
-            checked_in = False
             if occupancy and occupancy.ticket_id:
-                from checkin.models import CheckIn
-
-                checked_in = CheckIn.objects.filter(ticket_id=occupancy.ticket_id, undone_at__isnull=True).exists()
                 occupant = {
                     "kind": "ticket",
                     "ticket_id": str(occupancy.ticket_id),
                     "label": occupancy.ticket.display_name,
                     "party": occupancy.ticket.booking.party_name,
-                    "checked_in": checked_in,
+                    "checked_in": occupancy.ticket_id in checked_in_ids,
                 }
                 assigned.add(occupancy.ticket_id)
             elif occupancy and occupancy.hold_id:

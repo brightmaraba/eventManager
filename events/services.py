@@ -45,7 +45,13 @@ def parse_local_datetime(value, timezone_name):
         text = str(value).strip()
         if text.endswith("Z"):
             text = text[:-1]
-        naive = datetime.fromisoformat(text)
+        try:
+            naive = datetime.fromisoformat(text)
+        except ValueError as exc:
+            raise DomainError(
+                "invalid_datetime",
+                "Enter a date and time, such as 2026-11-20T18:00.",
+            ) from exc
         if naive.tzinfo is not None:
             naive = naive.astimezone(ZoneInfo(timezone_name)).replace(tzinfo=None)
     if timezone_name not in available_timezones():

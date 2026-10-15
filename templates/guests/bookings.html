@@ -2,7 +2,7 @@
 {% block title %}Bookings{% endblock %}
 {% block content %}
   <h1>Bookings</h1>
-  <form method="get"><label>Search <input class="control" name="q" value="{{ request.GET.q }}"></label><button type="submit">Search</button></form>
+  <form method="get" class="panel" role="search"><label>Search <input class="control" name="q" value="{{ request.GET.q }}"></label><button type="submit">Search</button></form>
   {% for booking in bookings %}
     <section class="panel">
       <h2>{{ booking.party_name|default:booking.original_email }}</h2>

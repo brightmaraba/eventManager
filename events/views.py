@@ -15,7 +15,7 @@ from accounts.permissions import (
     can_publish,
     can_view,
 )
-from core.errors import DomainError, NotFound
+from core.errors import Conflict, DomainError, NotFound
 from core.http import require_login, wants_json
 from core.idempotency import execute
 from events.models import Event
@@ -53,6 +53,16 @@ def finish(request, result, target):
         return json_result(result)
     messages.success(request, "Saved.")
     return redirect(target)
+
+
+def show_schedule_error(form, exc):
+    if isinstance(exc, Conflict):
+        raise exc
+    if exc.field_errors:
+        for field, message in exc.field_errors.items():
+            form.add_error(field if field in form.fields else None, message)
+    else:
+        form.add_error(None, exc.message)
 
 
 @require_login
@@ -105,9 +115,13 @@ def event_create(request):
                 save_image(actor=request.user, event=event, uploaded=data["logo"], field="logo", request_id=request.request_id)
             return {"event_id": str(event.id)}
 
-        result = execute(organization=organization, operation="event_create", key=key, payload={"name": data["name"], "starts_at": str(data["starts_at"])}, fn=run)
-        messages.success(request, "Event created.")
-        return redirect("event-detail", event_id=result.body["event_id"])
+        try:
+            result = execute(organization=organization, operation="event_create", key=key, payload={"name": data["name"], "starts_at": str(data["starts_at"])}, fn=run)
+        except DomainError as exc:
+            show_schedule_error(form, exc)
+        else:
+            messages.success(request, "Event created.")
+            return redirect("event-detail", event_id=result.body["event_id"])
     return render(request, "events/form.html", {"form": form, "mode": "create"})
 
 
@@ -141,11 +155,15 @@ def event_edit(request, event_id):
     initial = event_form_data(event)
     form = EventForm(request.POST or None, request.FILES or None, initial=None if request.method == "POST" else initial)
     if request.method == "POST" and form.is_valid():
-        update_event(actor=request.user, event=event, data=form.cleaned_data, request_id=request.request_id)
-        if form.cleaned_data.get("logo"):
-            save_image(actor=request.user, event=event, uploaded=form.cleaned_data["logo"], field="logo", request_id=request.request_id)
-        messages.success(request, "Event saved.")
-        return redirect("event-detail", event_id=event.id)
+        try:
+            update_event(actor=request.user, event=event, data=form.cleaned_data, request_id=request.request_id)
+        except DomainError as exc:
+            show_schedule_error(form, exc)
+        else:
+            if form.cleaned_data.get("logo"):
+                save_image(actor=request.user, event=event, uploaded=form.cleaned_data["logo"], field="logo", request_id=request.request_id)
+            messages.success(request, "Event saved.")
+            return redirect("event-detail", event_id=event.id)
     return render(request, "events/form.html", {"form": form, "mode": "edit", "event": event})
 
 

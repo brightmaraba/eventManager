@@ -2,7 +2,7 @@
 {% block title %}Publications{% endblock %}
 {% block content %}
   <h1>Publications</h1>
-  {% if event.republish_required %}<p role="status">A new publication is required.</p>{% endif %}
+  {% if event.republish_required %}<p class="status" role="status">A new publication is required.</p>{% endif %}
   <form method="post" class="panel">{% csrf_token %}
     <label><input type="checkbox" name="acknowledge_unassigned" value="yes"> Publish even if some tickets are unassigned. Guest messages must say seating is pending.</label>
     <button type="submit">Publish snapshot</button>

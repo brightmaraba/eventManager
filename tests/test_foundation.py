@@ -44,6 +44,36 @@ def test_archive_is_reversible_and_gap_time_is_rejected(owner, event):
         parse_local_datetime("2026-03-08T02:30", "America/New_York")
     stored = parse_local_datetime("2026-07-01T18:00", "America/New_York")
     assert stored.hour == 22
+    with pytest.raises(DomainError):
+        parse_local_datetime("05:00 PM", "Africa/Nairobi")
+
+
+@pytest.mark.django_db
+def test_time_only_schedule_stays_on_the_form(client, owner, settings):
+    settings.DEBUG = True
+    user, organization = owner
+    client.force_login(user)
+    session = client.session
+    session["organization_id"] = str(organization.id)
+    session.save()
+    fields = {
+        "name": "Dinner",
+        "venue_name": "North Hall",
+        "address_line1": "1 Example Street",
+        "locality": "Nairobi",
+        "postal_code": "00100",
+        "country": "Kenya",
+        "timezone": "Africa/Nairobi",
+        "initial_table_count": "0",
+        "default_seats_per_table": "8",
+        "doors_open_at": "2026-11-20T17:30",
+    }
+    rejected = client.post("/events/new/", {**fields, "starts_at": "05:00 PM", "ends_at": "2026-11-20T22:00"})
+    assert rejected.status_code == 200
+    assert b"Enter a date and time." in rejected.content
+    created = client.post("/events/new/", {**fields, "starts_at": "2026-11-20T18:00", "ends_at": "2026-11-20T22:00"})
+    assert created.status_code == 302
+    assert created.url.startswith("/events/")
 
 
 @pytest.mark.django_db

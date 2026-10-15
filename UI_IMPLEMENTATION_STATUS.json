@@ -1,0 +1,78 @@
+{
+  "updated": "2026-10-16",
+  "note": "UI01–UI09 were inferred from the surviving quality gates because CURSOR_UI_IMPLEMETATION_PLAN.json starts at UI10. Status follows the checks in docs/ui-acceptance-results.md and docs/ui-performance.md.",
+  "tasks": [
+    {
+      "id": "UI01",
+      "title": "Olive, lime, and ivory tokens and shell",
+      "status": "complete",
+      "evidence": "core/static/app.css and templates/base.html. tests/test_ui_glass.py passed. Chromium login screenshot tests/browser/visual/login-desktop-chromium.png."
+    },
+    {
+      "id": "UI02",
+      "title": "Shared panels, buttons, tables, and status",
+      "status": "complete",
+      "evidence": "Shared classes in core/static/app.css. Glass count stays at or below three on login, events, editor, and check-in."
+    },
+    {
+      "id": "UI03",
+      "title": "Account screens",
+      "status": "complete",
+      "evidence": "Login, MFA, password reset, organizations, and members use the base shell. Login passed axe-core 4.10.3 on Chromium 156.0.8078.4, Firefox 157.0, and WebKit 27.2."
+    },
+    {
+      "id": "UI04",
+      "title": "Event list and detail",
+      "status": "complete",
+      "evidence": "Event detail uses header and metrics glass only. Desktop and 320px screenshots reviewed. Reflow test passed at 320 CSS px."
+    },
+    {
+      "id": "UI05",
+      "title": "Bookings, import, and public seating",
+      "status": "complete",
+      "evidence": "Import preview passed axe. Public seating still shows pending copy and reflows at 320 CSS px. Long party names render in the booking list and place-card HTML."
+    },
+    {
+      "id": "UI06",
+      "title": "Layout editor",
+      "status": "complete",
+      "evidence": "Canvas and ticket list stay solid. Keyboard assign, unassign, hold, swap, and party forms remain. Drag updates one SVG transform. Loading and conflict screenshots reviewed."
+    },
+    {
+      "id": "UI07",
+      "title": "Publications",
+      "status": "complete",
+      "evidence": "Publications page keeps its form and republish status, styled with the shared solid panel. No publication behavior changed. layouts/tests/test_publications.py passed."
+    },
+    {
+      "id": "UI08",
+      "title": "Check-in",
+      "status": "complete",
+      "evidence": "Check-in desk passed axe and the 320px reflow test. Screenshot tests/browser/visual/checkin-desktop-chromium.png."
+    },
+    {
+      "id": "UI09",
+      "title": "Messages and print",
+      "status": "complete",
+      "evidence": "Message pages use the shared shell. Print CSS is solid #283113 on #F5F4ED with no blur. tests/test_release.py PDF check passed. communications/tests/test_outbox.py passed."
+    },
+    {
+      "id": "UI10",
+      "title": "Responsive, accessible, and performance refinement",
+      "status": "partial",
+      "evidence": "No critical or serious axe violations on the covered pages. Ordinary pages reflow at 320 CSS px. Editor HTML for 1000 tables and 10000 tickets rendered in 2.678 s. Manual screen-reader pass, forced-color walkthrough, browser paint of the large layout, and p95 assignment were not done."
+    },
+    {
+      "id": "UI11",
+      "title": "Visual regression and cross-browser verification",
+      "status": "partial",
+      "evidence": "Reviewed baselines in tests/browser/visual for Chromium 156.0.8078.4, Firefox 157.0, and WebKit 27.2. The combined browser suite passed 21 tests. Domain import, hold, assignment, publication, and mail tests passed. A3 clipping was not judged by eye. Screenshot comparison allows 40 pixels of noise."
+    },
+    {
+      "id": "UI12",
+      "title": "Design-system and implementation handover",
+      "status": "complete",
+      "evidence": "docs/design-system.md, docs/ui-user-guide.md, docs/ui-performance.md, docs/ui-acceptance-results.md, and the UI test commands in README.md."
+    }
+  ]
+}

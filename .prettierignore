@@ -1,0 +1,70 @@
+# Django templates: keep template tags/filters and embedded template syntax
+# out of Prettier's generic HTML, JavaScript and CSS parsers.
+# Covers both project-level templates/ and app-level <app>/templates/.
+**/templates/**
+**/*.djhtml
+**/*.django
+**/*.html.j2
+**/*.jinja
+**/*.jinja2
+# Python environments, caches and packaging output
+.venv/
+venv/
+env/
+**/__pycache__/
+**/*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+**/*.egg-info/
+# Frontend dependencies and generated bundles
+**/node_modules/
+dist/
+build/
+**/static/vendor/
+**/*.min.js
+**/*.min.css
+**/*.map
+# Django collected static assets and private/generated files.
+# Keep authored files in static/ and <app>/static/ formattable.
+staticfiles/
+private/
+media/
+run/
+logs/
+backups/
+**/*.log
+**/*.sqlite3
+**/*.sqlite3-journal
+**/celerybeat-schedule*
+# Secrets and local environment configuration
+.env
+.env.*
+!.env.prod.example
+secrets/
+# Test output, coverage and generated documentation
+coverage/
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+playwright-report/
+test-results/
+blob-report/
+site/
+# Dependency lockfiles are maintained by their package managers
+package-lock.json
+npm-shrinkwrap.json
+yarn.lock
+pnpm-lock.yaml
+uv.lock
+poetry.lock
+Pipfile.lock
+# Repository metadata and packaged deliverables
+.git/
+**/*.zip
+**/*.tar
+**/*.tar.gz
+**/*.pdf

@@ -11,7 +11,7 @@
 </head>
 <body>
   <a class="skip" href="#content">Skip to content</a>
-  <header class="site-header">
+  <header class="site-header glass">
     <a class="brand" href="{% url 'event-list' %}">Event tables</a>
     <nav aria-label="Primary">
       {% if request.user.is_authenticated %}
@@ -19,7 +19,7 @@
         <a href="{% url 'organization-select' %}">Organization{% if current_organization %}: {{ current_organization.name }}{% endif %}</a>
         <form method="post" action="{% url 'logout' %}">
           {% csrf_token %}
-          <button type="submit">Log out</button>
+          <button class="secondary" type="submit">Log out</button>
         </form>
       {% else %}
         <a href="{% url 'login' %}">Log in</a>
@@ -28,7 +28,7 @@
   </header>
   <main id="content">
     {% if messages %}
-      <ul class="messages">
+      <ul class="messages" role="status">
         {% for message in messages %}<li>{{ message }}</li>{% endfor %}
       </ul>
     {% endif %}

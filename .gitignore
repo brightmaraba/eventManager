@@ -6,3 +6,5 @@ __pycache__/
 private/
 staticfiles/
 run/
+test-results/
+playwright-report/

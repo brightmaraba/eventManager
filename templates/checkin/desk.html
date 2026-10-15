@@ -2,7 +2,7 @@
 {% block title %}Check-in{% endblock %}
 {% block content %}
   <h1>Check-in</h1>
-  {% if message %}<p role="status">{{ message }}</p>{% endif %}
+  {% if message %}<p class="status" role="status">{{ message }}</p>{% endif %}
   {% if progress %}<p>{{ progress.arrived }} of {{ progress.total }} arrived.</p>{% endif %}
   <form method="post" class="panel">{% csrf_token %}<input type="hidden" name="action" value="search"><label>Search <input class="control" name="q" required></label><button type="submit">Search</button></form>
   <form method="post" class="panel">{% csrf_token %}<input type="hidden" name="action" value="scan"><label>Scanner code <input class="control" name="token" autocomplete="off"></label><button type="submit">Check in code</button></form>

@@ -1,0 +1,150 @@
+    {
+      "id": "UI10",
+      "title": "Responsive, accessible and performance refinement",
+      "status": "pending",
+      "depends_on": [
+        "UI05",
+        "UI06",
+        "UI07",
+        "UI08",
+        "UI09"
+      ],
+      "existing_plan_dependencies": [],
+      "files_to_create_or_modify": [
+        "static/css/",
+        "static/js/",
+        "tests/browser/test_ui_accessibility.py",
+        "docs/ui-performance.md"
+      ],
+      "implementation_steps": [
+        "Exercise all target viewports, zoom, forced colors, reduced motion and reduced transparency.",
+        "Run automated accessibility checks and manual keyboard/screen-reader workflows.",
+        "Test unsupported blur fallback and unusually long content.",
+        "Measure editor performance with representative 1000-table/10000-ticket workload and optimize blur/rendering."
+      ],
+      "acceptance_criteria": [
+        "No critical/serious automated accessibility violations remain; manual findings are resolved or explicit blockers.",
+        "All ordinary pages reflow at 320 CSS px.",
+        "No sustained visible interaction stutter on documented reference hardware.",
+        "Original functional performance targets remain satisfied."
+      ]
+    },
+    {
+      "id": "UI11",
+      "title": "Visual regression and cross-browser verification",
+      "status": "pending",
+      "depends_on": [
+        "UI10"
+      ],
+      "existing_plan_dependencies": [
+        "T19"
+      ],
+      "files_to_create_or_modify": [
+        "tests/browser/visual/",
+        "docs/ui-acceptance-results.md"
+      ],
+      "implementation_steps": [
+        "Create deterministic screenshots for critical screens and component states.",
+        "Test current available Chromium, Firefox and WebKit engines; record exact versions.",
+        "Freeze fixture dates, fonts and animations for repeatable visual checks.",
+        "Manually inspect canvas, transparent layers, PDF pages and focus states.",
+        "Rerun relevant original acceptance tests after UI integration."
+      ],
+      "acceptance_criteria": [
+        "Screenshots cover target viewports and error/loading/conflict states.",
+        "Differences are reviewed, not blindly accepted.",
+        "No regressions in imports, holds, assignments, publication or email confirmation."
+      ]
+    },
+    {
+      "id": "UI12",
+      "title": "Design-system and implementation handover",
+      "status": "pending",
+      "depends_on": [
+        "UI11"
+      ],
+      "existing_plan_dependencies": [],
+      "files_to_create_or_modify": [
+        "docs/design-system.md",
+        "docs/ui-user-guide.md",
+        "UI_IMPLEMENTATION_STATUS.json",
+        "README.md"
+      ],
+      "implementation_steps": [
+        "Document token usage, glass limits, component parameters and responsive rules.",
+        "Document backend prerequisites still blocked and actual test evidence.",
+        "Provide before/after screenshots from implemented screens, not mockups.",
+        "Add exact UI test commands and fixture setup to README."
+      ],
+      "acceptance_criteria": [
+        "New screens can use shared components without bespoke visual rules.",
+        "Completion claims correspond to actual integrated behavior and evidence."
+      ]
+    }
+  ],
+  "quality_gates": [
+    {
+      "id": "VISUAL",
+      "criteria": [
+        "Olive/lime/ivory identity consistent across every screen.",
+        "Hierarchy, spacing, type and component states are coherent.",
+        "No clipping, overlap, unstable loading layout or decorative glass on dense data."
+      ]
+    },
+    {
+      "id": "ACCESSIBILITY",
+      "criteria": [
+        "Contrast requirements met for solid and composited backgrounds.",
+        "Keyboard/list alternatives complete core workflows.",
+        "Reduced transparency/motion, forced colors and zoom/reflow verified."
+      ]
+    },
+    {
+      "id": "FUNCTIONAL",
+      "criteria": [
+        "Original domain protections and permission boundaries preserved.",
+        "No placeholder actions masquerading as working features.",
+        "Server failures, stale writes and ambiguous delivery remain visible."
+      ]
+    },
+    {
+      "id": "PERFORMANCE",
+      "criteria": [
+        "Initial blur budget of at most three visible regions respected or deviations supported by measurements.",
+        "Editor drag preview aims for 60 fps on documented reference desktop; test under representative workload.",
+        "Existing p95 assignment and initial layout performance targets remain unchanged."
+      ]
+    },
+    {
+      "id": "PRINT",
+      "criteria": [
+        "A4/A3 output uses readable solid backgrounds and controlled ink usage.",
+        "Selected publication and privacy settings match generated artifact."
+      ]
+    }
+  ],
+  "validation_strategy": {
+    "automated": [
+      "Django integration tests for changed forms/views.",
+      "Playwright behavior and screenshot tests.",
+      "axe-core or equivalent automated accessibility scans.",
+      "Token contrast checks plus manual composited-surface verification."
+    ],
+    "manual": [
+      "Keyboard-only event setup and seating.",
+      "Screen-reader form errors, import preview and check-in.",
+      "Reduced-motion/transparency and forced-colors review.",
+      "PDF page rendering and print preview review.",
+      "Mobile touch and representative large-layout interaction."
+    ],
+    "evidence": "Record browser/runtime versions, viewport, fixture, result and screenshot/artifact path for each gate. Do not mark accessibility compliance solely from automated scans."
+  },
+  "definition_of_done": [
+    "UI01–UI12 completed with real integrations or remaining blockers explicitly listed.",
+    "Required brand palette and restrained glass system applied consistently.",
+    "Business workflows and original acceptance invariants preserved.",
+    "Visual, accessibility, functional, performance and print gates pass.",
+    "UI documentation, deterministic fixtures and reproducible validation commands delivered."
+  ],
+  "suggested_cursor_prompt": "Read CURSOR_UI_IMPLEMENTATION_PLAN.json together with SPECIFICATION.md and CURSOR_IMPLEMENTATION_PLAN.json. Audit the actual application, then implement the new professional Liquid Glass UI in dependency order. Use #283113, #F3FF74 and #F5F4ED with the defined semantic tokens. Preserve Django templates, backend rules, accessibility and working behavior. Track progress and actual evidence in UI_IMPLEMENTATION_STATUS.json; do not mark missing backend integrations complete."
+}

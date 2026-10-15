@@ -1,10 +1,30 @@
-@page { margin: 12mm; }
-body { font-family: "Liberation Sans", sans-serif; color: #111; }
-table { width: 100%; border-collapse: collapse; }
-th, td { border-bottom: 1px solid #ccc; padding: 4px; text-align: left; word-break: break-word; }
-svg { width: 100%; height: auto; }
-.card { break-inside: avoid; border: 1px solid #111; padding: 8mm; margin: 4mm; }
-.paper-a3 { }
+@page { margin: 12mm; size: A4; }
+@page a3 { size: A3; margin: 12mm; }
+body {
+  font-family: "Liberation Sans", sans-serif;
+  color: #283113;
+  background: #f5f4ed;
+}
+table { width: 100%; border-collapse: collapse; background: #f5f4ed; }
+th, td {
+  border-bottom: 1px solid #283113;
+  padding: 4px;
+  text-align: left;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+svg { width: 100%; height: auto; background: #f5f4ed; }
+.card {
+  break-inside: avoid;
+  background: #f5f4ed;
+  color: #283113;
+  border: 1px solid #283113;
+  padding: 8mm;
+  margin: 4mm;
+  overflow-wrap: anywhere;
+}
+.paper-a3 { page: a3; }
 .orient-landscape svg { max-height: 180mm; }
-.mode-tile .card { width: 80mm; display: inline-block; }
-h1, p { overflow: visible; }
+.mode-tile .card { width: 80mm; display: inline-block; vertical-align: top; }
+h1, h2, p { overflow-wrap: anywhere; }
+header { border-bottom: 1px solid #283113; margin-bottom: 6mm; }

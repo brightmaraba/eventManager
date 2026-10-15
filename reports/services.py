@@ -73,9 +73,13 @@ def _safe_fetcher(url, timeout=10, ssl_context=None):
 
 
 def html_to_pdf(html):
-    from weasyprint import HTML
+    from pathlib import Path
 
-    return HTML(string=html, url_fetcher=_safe_fetcher).write_pdf()
+    from django.conf import settings
+    from weasyprint import CSS, HTML
+
+    css_path = Path(settings.BASE_DIR) / "reports" / "static" / "reports" / "print.css"
+    return HTML(string=html, url_fetcher=_safe_fetcher).write_pdf(stylesheets=[CSS(filename=str(css_path))])
 
 
 @transaction.atomic
