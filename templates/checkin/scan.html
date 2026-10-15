@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Scan{% endblock %}
+{% block content %}
+  <h1>Ticket scan</h1>
+  {% if result %}<p role="status">{% if result.already_checked_in %}Already checked in at {{ result.checked_in_at }}{% else %}Checked in at {{ result.checked_in_at }}{% endif %}</p>{% endif %}
+  {% if token_present %}
+    <form method="post">{% csrf_token %}<button type="submit">Confirm check-in</button></form>
+  {% endif %}
+{% endblock %}

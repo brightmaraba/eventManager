@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+  <h1>Log in</h1>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <form method="post" class="panel">
+    {% csrf_token %}
+    <label>Email <input class="control" name="email" type="email" autocomplete="username" required></label>
+    <label>Password <input class="control" name="password" type="password" autocomplete="current-password" required></label>
+    <button type="submit">Log in</button>
+  </form>
+  <p><a href="{% url 'password-reset' %}">Reset password</a></p>
+{% endblock %}

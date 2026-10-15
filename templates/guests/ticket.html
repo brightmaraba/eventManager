@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Attendee{% endblock %}
+{% block content %}
+  <h1>Attendee name</h1>
+  <form method="post" class="panel">{% csrf_token %}
+    <label>Display name <input class="control" name="display_name" value="{{ ticket.display_name }}" required></label>
+    <button type="submit">Save name</button>
+  </form>
+{% endblock %}

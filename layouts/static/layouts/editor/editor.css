@@ -1,0 +1,20 @@
+.editor-grid { display: grid; grid-template-columns: 1fr 280px; gap: 1rem; }
+#room-canvas { width: 100%; height: 640px; background: white; border: 1px solid #d9d1c3; touch-action: none; }
+.table-shape { fill: #f3efe4; stroke: #1c1915; stroke-width: .04; }
+.seat { stroke: #1c1915; stroke-width: .03; }
+.seat.available { fill: #d9efe6; }
+.seat.held { fill: #f3e2b3; }
+.seat.assigned { fill: #c9d7f2; }
+.seat.blocked { fill: #e6d4d4; }
+.seat.checked_in { fill: #b7d7c9; }
+.seat-label, .table-label { font-size: .28px; fill: #1c1915; }
+#ticket-list { list-style: none; padding: 0; max-height: 420px; overflow: auto; }
+#ticket-list button[aria-selected="true"] { outline: 3px solid #111; }
+.legend span { margin-right: .8rem; }
+.legend span::before { content: ""; display: inline-block; width: .8rem; height: .8rem; margin-right: .3rem; border: 1px solid #111; vertical-align: middle; }
+.legend span:nth-child(1)::before { background: #d9efe6; }
+.legend span:nth-child(2)::before { background: #f3e2b3; }
+.legend span:nth-child(3)::before { background: #c9d7f2; }
+.legend span:nth-child(4)::before { background: #e6d4d4; }
+.legend span:nth-child(5)::before { background: #b7d7c9; }
+@media (max-width: 800px) { .editor-grid { grid-template-columns: 1fr; } }

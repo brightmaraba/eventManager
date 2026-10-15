@@ -15,8 +15,8 @@ x-app: &app
     DJANGO_ALLOWED_HOSTS: ${DOMAIN:?Set DOMAIN},localhost,127.0.0.1
     DJANGO_CSRF_TRUSTED_ORIGINS: https://${DOMAIN}
     POSTGRES_DB: event_tables
-    POSTGRES_USER: event_tables
-    POSTGRES_PASSWORD_FILE: /run/secrets/postgres_password
+    POSTGRES_USER: event_tables_app
+    POSTGRES_PASSWORD_FILE: /run/secrets/postgres_runtime_password
     CELERY_BROKER_URL: redis://redis:6379/0
     EMAIL_HOST: smtp.sendgrid.net
     EMAIL_PORT: "587"
@@ -24,7 +24,9 @@ x-app: &app
     EMAIL_HOST_USER: apikey
     SENDGRID_API_KEY_FILE: /run/secrets/sendgrid_api_key
     DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:?Set authenticated sender address}
-  secrets: [django_secret_key, postgres_password, sendgrid_api_key]
+    XDG_CACHE_HOME: /tmp/cache
+    PUBLIC_BASE_URL: https://${DOMAIN}
+  secrets: [django_secret_key, postgres_runtime_password, sendgrid_api_key]
   volumes:
     - private_data:/app/private
     - static_data:/app/staticfiles
@@ -41,7 +43,7 @@ x-app: &app
       max-file: "5"
 services:
   db:
-    image: postgres:17-bookworm
+    image: postgres:17-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
     restart: unless-stopped
     environment:
       POSTGRES_DB: event_tables
@@ -57,7 +59,7 @@ services:
       timeout: 5s
       retries: 12
   redis:
-    image: redis:7.4-alpine
+    image: redis:7.4-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
     restart: unless-stopped
     command: [redis-server, --appendonly, "yes", --appendfsync, everysec, --maxmemory-policy, noeviction]
     volumes:
@@ -72,7 +74,16 @@ services:
     <<: *app
     restart: "no"
     profiles: [release]
-    command: [sh, -c, "python manage.py migrate --noinput && python manage.py collectstatic --noinput"]
+    environment:
+      <<: *app-env
+      POSTGRES_USER: event_tables_migrate
+      POSTGRES_PASSWORD_FILE: /run/secrets/postgres_migration_password
+      POSTGRES_ADMIN_USER: event_tables
+      POSTGRES_ADMIN_PASSWORD_FILE: /run/secrets/postgres_password
+      POSTGRES_RUNTIME_PASSWORD_FILE: /run/secrets/postgres_runtime_password
+      POSTGRES_APP_USER: event_tables_app
+    secrets: [django_secret_key, postgres_migration_password, postgres_runtime_password, postgres_password, sendgrid_api_key]
+    command: [python, manage.py, release_prepare]
   web:
     <<: *app
     healthcheck:
@@ -91,7 +102,7 @@ services:
     volumes:
       - beat_data:/app/run
   proxy:
-    image: caddy:2-alpine
+    image: caddy:2-alpine@sha256:d8542f48d34a9cf4e4c11a478865229840e87e4c96ea3f439101f31a5d35f75f
     restart: unless-stopped
     environment:
       DOMAIN: ${DOMAIN}
@@ -124,5 +135,9 @@ secrets:
     file: ./secrets/django_secret_key.txt
   postgres_password:
     file: ./secrets/postgres_password.txt
+  postgres_runtime_password:
+    file: ./secrets/postgres_runtime_password.txt
+  postgres_migration_password:
+    file: ./secrets/postgres_migration_password.txt
   sendgrid_api_key:
     file: ./secrets/sendgrid_api_key.txt

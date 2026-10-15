@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ event.name }}{% endblock %}
+{% block content %}
+  <h1>{{ event.name }}</h1>
+  <p>{{ event.get_status_display }} · {{ event.venue_name }}, {{ event.locality }} · {{ local.starts_at }} {{ event.timezone }}</p>
+  <section class="metrics" aria-label="Event totals">
+    <div><strong>{{ metrics.tickets }}</strong> Tickets</div>
+    <div><strong>{{ metrics.capacity }}</strong> Capacity</div>
+    <div><strong>{{ metrics.blocked }}</strong> Blocked</div>
+    <div><strong>{{ metrics.held }}</strong> Held</div>
+    <div><strong>{{ metrics.assigned }}</strong> Assigned</div>
+    <div><strong>{{ metrics.unassigned }}</strong> Unassigned</div>
+    <div><strong>{{ metrics.checked_in }}</strong> Checked in</div>
+  </section>
+  <nav class="panel" aria-label="Event sections">
+    {% if can_layout %}<a href="{% url 'layout-editor' event.id %}">Seating layout</a>{% endif %}
+    <a href="{% url 'bookings' event.id %}">Bookings</a>
+    {% if can_import %}<a href="{% url 'imports' event.id %}">Import</a>{% endif %}
+    <a href="{% url 'publications' event.id %}">Publications</a>
+    {% if can_mail %}<a href="{% url 'campaigns' event.id %}">Messages</a>{% endif %}
+    {% if can_checkin %}<a href="{% url 'checkins' event.id %}">Check-in</a>{% endif %}
+    {% if can_export %}<a href="{% url 'exports' event.id %}">Exports</a>{% endif %}
+    {% if can_manage %}<a href="{% url 'event-edit' event.id %}">Edit details</a>{% endif %}
+  </nav>
+  {% if event.republish_required %}<p role="status">Seating changed after the last publication. Publish again before relying on guest links.</p>{% endif %}
+  {% if can_manage %}
+    <form method="post" action="{% url 'event-action' event.id 'archive' %}">{% csrf_token %}<button type="submit">Archive</button></form>
+    <form method="post" action="{% url 'event-action' event.id 'unarchive' %}">{% csrf_token %}<button class="secondary" type="submit">Restore archive</button></form>
+    <form method="post" action="{% url 'event-action' event.id 'complete' %}">{% csrf_token %}<button class="secondary" type="submit">Mark completed</button></form>
+    <form method="post" action="{% url 'event-action' event.id 'cancel' %}" class="panel">{% csrf_token %}
+      <label>Cancellation reason <input class="control" name="reason" required></label>
+      <button type="submit">Cancel event</button>
+    </form>
+    <form method="post" action="{% url 'event-action' event.id 'duplicate' %}" class="panel">{% csrf_token %}
+      <label>Duplicate name <input class="control" name="name" value="{{ event.name }} copy"></label>
+      <button type="submit">Duplicate layout</button>
+    </form>
+    <form method="post" action="{% url 'event-grant' event.id %}" class="panel">{% csrf_token %}
+      <h2>Event access</h2>
+      <label>Email <input class="control" type="email" name="email" required></label>
+      <label>Role
+        <select class="control" name="role">
+          <option value="seating_coordinator">Seating coordinator</option>
+          <option value="checkin_staff">Check-in staff</option>
+          <option value="readonly">Read-only</option>
+        </select>
+      </label>
+      <label><input type="checkbox" name="can_export" value="yes"> Allow exports</label>
+      <button type="submit">Save grant</button>
+    </form>
+  {% endif %}
+{% endblock %}

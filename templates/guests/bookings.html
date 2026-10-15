@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Bookings{% endblock %}
+{% block content %}
+  <h1>Bookings</h1>
+  <form method="get"><label>Search <input class="control" name="q" value="{{ request.GET.q }}"></label><button type="submit">Search</button></form>
+  {% for booking in bookings %}
+    <section class="panel">
+      <h2>{{ booking.party_name|default:booking.original_email }}</h2>
+      <p>{{ booking.original_email }} · {{ booking.booking_reference }}</p>
+      <ul>{% for ticket in booking.tickets.all %}<li>{{ ticket.display_name }} · {{ ticket.status }} {% if ticket.status == "active" %}<a href="{% url 'ticket-edit' event.id ticket.id %}">Edit name</a>{% endif %}</li>{% endfor %}</ul>
+    </section>
+  {% empty %}<p>No bookings yet.</p>{% endfor %}
+{% endblock %}

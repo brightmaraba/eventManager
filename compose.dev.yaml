@@ -1,6 +1,9 @@
 name: event-tables-dev
 x-app: &app
-  build: .
+  build:
+    context: .
+    args:
+      INSTALL_DEV: "1"
   environment: &app-env
     DJANGO_DEBUG: "1"
     DJANGO_SECRET_KEY: dev-only-insecure-key-change-in-production
@@ -23,7 +26,7 @@ x-app: &app
       condition: service_healthy
 services:
   db:
-    image: postgres:17-bookworm
+    image: postgres:17-bookworm@sha256:3645570cccdfa447589da9f57dd740faa29b30938e861289a5574b6ca6b03826
     environment:
       POSTGRES_DB: event_tables
       POSTGRES_USER: event_tables
@@ -36,7 +39,7 @@ services:
       timeout: 3s
       retries: 20
   redis:
-    image: redis:7.4-alpine
+    image: redis:7.4-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
     command: [redis-server, --appendonly, "yes", --maxmemory-policy, noeviction]
     volumes:
       - dev_redis:/data
@@ -46,7 +49,7 @@ services:
       timeout: 3s
       retries: 20
   maildev:
-    image: maildev/maildev:2
+    image: maildev/maildev:2.1.0@sha256:f7429227b8f471b3fe761767d86a8794a2fc7488bccdcda46ea6d5ba5c2c7bf5
     ports:
       - "127.0.0.1:1080:1080"
   migrate:

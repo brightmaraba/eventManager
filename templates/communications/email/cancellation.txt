@@ -1,0 +1,7 @@
+{% autoescape off %}Cancellation: {{ event_name }}
+{{ when }} ({{ timezone }})
+{{ venue }}
+Tickets: {{ ticket_total }}
+This event has been cancelled.
+{{ contact_name }} {{ contact_email }}
+{% endautoescape %}

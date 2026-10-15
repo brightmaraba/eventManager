@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Publications{% endblock %}
+{% block content %}
+  <h1>Publications</h1>
+  {% if event.republish_required %}<p role="status">A new publication is required.</p>{% endif %}
+  <form method="post" class="panel">{% csrf_token %}
+    <label><input type="checkbox" name="acknowledge_unassigned" value="yes"> Publish even if some tickets are unassigned. Guest messages must say seating is pending.</label>
+    <button type="submit">Publish snapshot</button>
+  </form>
+  <ul>{% for publication in publications %}<li>Publication {{ publication.number }} · {{ publication.created_at }} · unassigned acknowledged: {{ publication.acknowledged_unassigned|yesno:"yes,no" }}</li>{% empty %}<li>No publications yet.</li>{% endfor %}</ul>
+  {% if changed_bookings %}<h2>Bookings changed since the previous publication</h2><ul>{% for booking in changed_bookings %}<li>{{ booking }}</li>{% endfor %}</ul>{% endif %}
+{% endblock %}

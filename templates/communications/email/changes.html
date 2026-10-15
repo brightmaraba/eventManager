@@ -1,0 +1,10 @@
+<!DOCTYPE html><html><body>
+<h1>Seating change: {{ event_name }}</h1>
+<p>{{ when }} ({{ timezone }})</p>
+<p>{{ venue }}</p>
+<p>Tickets: {{ ticket_total }}</p>
+{% if pending %}<p>Seating is pending.</p>{% else %}<ul>{% for seat in seats %}<li>{{ seat.display_name }} — table {{ seat.table_label }}, seat {{ seat.seat_label }}</li>{% endfor %}</ul>{% endif %}
+{% if guest_url %}<p><a href="{{ guest_url }}">Your seating</a></p>{% endif %}
+<p>{{ accessibility_notes }}</p>
+<p>{{ contact_name }} {{ contact_email }}</p>
+</body></html>

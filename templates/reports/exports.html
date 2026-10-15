@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Exports{% endblock %}
+{% block content %}
+  <h1>Exports</h1>
+  <p><a href="{% url 'print' event.id 'room_plan' %}">Print room plan</a></p>
+  <form method="post" class="panel">{% csrf_token %}
+    <label>Document <select class="control" name="kind">
+      <option value="room_plan">Room plan</option>
+      <option value="table_roster">Table roster</option>
+      <option value="alpha_roster">Alphabetical roster</option>
+      <option value="table_cards">Table cards</option>
+      <option value="place_cards">Place cards</option>
+      <option value="seating_slips">Seating slips</option>
+    </select></label>
+    <label>Paper <select class="control" name="paper"><option>a4</option><option>a3</option></select></label>
+    <label>Orientation <select class="control" name="orientation"><option>landscape</option><option>portrait</option></select></label>
+    <label>Fit <select class="control" name="fit"><option value="fit">Fit</option><option value="tile">Tile</option></select></label>
+    <label><input type="checkbox" name="public" value="no"> Include emails and private notes</label>
+    <button type="submit">Generate PDF</button>
+  </form>
+  <form method="post">{% csrf_token %}<input type="hidden" name="format" value="csv"><label><input type="checkbox" name="include_email" value="yes"> Include emails</label><button type="submit">Download CSV</button></form>
+  <ul>{% for job in jobs %}<li><a href="{% url 'export-detail' event.id job.id %}">{{ job.kind }} · {{ job.state }}</a></li>{% endfor %}</ul>
+{% endblock %}

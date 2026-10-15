@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Import preview{% endblock %}
+{% block content %}
+  <h1>Import preview · {{ batch.state }}</h1>
+  <p>{{ batch.summary.rows }} rows, {{ batch.summary.errors }} errors. Roster revision at preview: {{ batch.roster_revision }}.</p>
+  <table>
+    <thead><tr><th>Line</th><th>Email</th><th>Tickets</th><th>Action</th><th>Errors</th></tr></thead>
+    <tbody>{% for row in rows %}<tr><td>{{ row.line_number }}</td><td>{{ row.email }}</td><td>{{ row.ticket_count }}</td><td>{{ row.action }}</td><td>{{ row.errors|join:"; " }}</td></tr>{% endfor %}</tbody>
+  </table>
+  <form method="post" action="{% url 'import-commit' event.id batch.id %}">{% csrf_token %}<button type="submit">Commit preview</button></form>
+  <form method="post" action="{% url 'import-valid' event.id batch.id %}">{% csrf_token %}<button class="secondary" type="submit">Preview valid rows only</button></form>
+  <p><a href="{% url 'import-errors' event.id batch.id %}">Download error report</a></p>
+{% endblock %}

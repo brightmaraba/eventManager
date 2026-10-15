@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>{{ job.kind }} · {{ job.state }}</h1>
+  {% if job.error %}<p class="error">{{ job.error }}</p>{% endif %}
+  {% if job.state == "ready" %}<p><a href="{% url 'export-detail' event.id job.id %}?download=1">Download</a></p>{% endif %}
+{% endblock %}

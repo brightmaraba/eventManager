@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Something needs attention{% endblock %}
+{% block content %}
+  <h1>{{ error.message }}</h1>
+  <p>Reference {{ payload.request_id }}</p>
+  {% if payload.impacts %}
+    <h2>Affected records</h2>
+    <ul>
+      {% for ticket in payload.impacts.tickets %}<li>{{ ticket.label }} {{ ticket.seat_label }}</li>{% endfor %}
+      {% for hold in payload.impacts.holds %}<li>Hold {{ hold.purpose }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+  <p><a href="{% url 'event-list' %}">Back to events</a></p>
+{% endblock %}

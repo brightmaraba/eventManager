@@ -1,0 +1,38 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}Event tables{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'app.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="{% url 'event-list' %}">Event tables</a>
+    <nav aria-label="Primary">
+      {% if request.user.is_authenticated %}
+        <a href="{% url 'event-list' %}">Events</a>
+        <a href="{% url 'organization-select' %}">Organization{% if current_organization %}: {{ current_organization.name }}{% endif %}</a>
+        <form method="post" action="{% url 'logout' %}">
+          {% csrf_token %}
+          <button type="submit">Log out</button>
+        </form>
+      {% else %}
+        <a href="{% url 'login' %}">Log in</a>
+      {% endif %}
+    </nav>
+  </header>
+  <main id="content">
+    {% if messages %}
+      <ul class="messages">
+        {% for message in messages %}<li>{{ message }}</li>{% endfor %}
+      </ul>
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

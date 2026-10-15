@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Messages{% endblock %}
+{% block content %}
+  <h1>Messages</h1>
+  <form method="post" class="panel">{% csrf_token %}
+    <label>Type <select class="control" name="kind">{% for value, label in kinds %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
+    <label>Subject <input class="control" name="subject" required></label>
+    <label>Audience
+      <select class="control" name="audience">
+        <option value="all">All active bookings</option>
+        <option value="assigned">Assigned</option>
+        <option value="unassigned">Unassigned</option>
+        <option value="failures">Delivery failures</option>
+      </select>
+    </label>
+    <button type="submit">Create draft</button>
+  </form>
+  <ul>{% for campaign in campaigns %}<li><a href="{% url 'campaign-detail' event.id campaign.id %}">{{ campaign.subject }} · {{ campaign.status }}</a></li>{% endfor %}</ul>
+{% endblock %}

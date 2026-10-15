@@ -1,0 +1,10 @@
+@page { margin: 12mm; }
+body { font-family: "Liberation Sans", sans-serif; color: #111; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border-bottom: 1px solid #ccc; padding: 4px; text-align: left; word-break: break-word; }
+svg { width: 100%; height: auto; }
+.card { break-inside: avoid; border: 1px solid #111; padding: 8mm; margin: 4mm; }
+.paper-a3 { }
+.orient-landscape svg { max-height: 180mm; }
+.mode-tile .card { width: 80mm; display: inline-block; }
+h1, p { overflow: visible; }

@@ -1,62 +1,109 @@
-# Event Table Management System — specification and container starter
+# Event Table Management System
 
-Start with [SPECIFICATION.md](SPECIFICATION.md). It contains the functional scope, data model, concurrency rules, CSV behavior, layout editor, reservations, communications, reports, security, operations and 20 acceptance scenarios.
+Django application for event setup, guest import, table seating, publication snapshots, guest links, check-in, mail, and printouts. Day-to-day use is in [docs/user-guide.md](docs/user-guide.md). Backup, rollback, and database roles are in [docs/operations.md](docs/operations.md).
 
-**Delivery boundary:** the Django project is a minimal infrastructure scaffold. Event CRUD, guest import, seating editor, reservation services, guest pages, reports, mail jobs, MFA and webhook verification are specified but not implemented. The `/` route intentionally has no application page yet. Available routes are `/admin/`, `/health/live/` and `/health/ready/`.
+You need Docker Engine with Linux containers and Docker Compose v2. Run every command from this directory.
 
-## Included files
+## Run locally
 
-| File | Purpose |
-|---|---|
-| `compose.dev.yaml` | Local Django, PostgreSQL, Redis, Celery worker/beat and MailDev |
-| `compose.prod.yaml` | Registry image, Gunicorn, PostgreSQL, Redis, worker/beat, release job and Caddy HTTPS |
-| `Dockerfile` | Non-root Python runtime for web and background services |
-| `config/` | Django/Celery settings, health routes and WSGI |
-| `deploy/Caddyfile` | Automatic public HTTPS and upload size limit |
-| `.env.prod.example` | Non-secret production configuration template |
-| `guests.example.csv` | Required import format example |
-
-## Development
-
-Prerequisites: Docker Engine/Desktop with Linux containers and Docker Compose v2. Run from this directory:
+Development Compose builds the app, applies migrations, then starts the web server, Celery worker, and Celery beat. PostgreSQL, Redis, and SMTP stay on the Compose network. Only the web UI and MailDev are published, and only on loopback.
 
 ```sh
 docker compose -f compose.dev.yaml config --quiet
 docker compose -f compose.dev.yaml up --build -d
-docker compose -f compose.dev.yaml exec web python manage.py createsuperuser
-docker compose -f compose.dev.yaml exec web python manage.py check
+docker compose -f compose.dev.yaml exec web python manage.py seed_demo
 ```
 
-Open Django admin at `http://localhost:8000/admin/` and MailDev at `http://localhost:1080`. The browser-accessible ports bind only to loopback. Database, Redis and SMTP have no published host ports. Development credentials are deliberately local-only. The migrate service completes before web/worker/beat start. Web reloads source edits; restart the worker after changing task code.
+Open the app at [http://127.0.0.1:8000/](http://127.0.0.1:8000/). The seed command creates a demo owner:
 
-Send a captured development email:
+| | |
+|---|---|
+| Email | `owner@example.test` |
+| Password | `S3cure-pass-word` |
+| Organization | North Hall |
+| Event | Spring dinner |
+
+Development login does not ask for a second factor because `DJANGO_DEBUG=1`. Captured mail is at [http://127.0.0.1:1080/](http://127.0.0.1:1080/). Messages are delivered to MailDev, not to the public internet.
+
+Useful checks:
 
 ```sh
-docker compose -f compose.dev.yaml exec web python manage.py shell -c "from django.core.mail import send_mail; send_mail('SMTP smoke test', 'Development email delivery works.', None, ['guest@example.test'])"
-docker compose -f compose.dev.yaml exec worker celery -A config inspect ping
+docker compose -f compose.dev.yaml ps
 docker compose -f compose.dev.yaml logs --tail=100 web worker beat
+docker compose -f compose.dev.yaml exec web python manage.py check
+docker compose -f compose.dev.yaml exec web pytest -q
+```
+
+Tests must run inside the web container. The database host name is `db`.
+
+Stop the stack without deleting data:
+
+```sh
 docker compose -f compose.dev.yaml down
 ```
 
-Named volumes preserve database and private files when services stop. `down -v` deletes them and must only be used for an intentional reset. Development source is bind mounted; production source is baked into the image.
+`docker compose -f compose.dev.yaml down -v` deletes the database, Redis data, and private files. Use it only when you intend to reset the local environment. Source edits are bind-mounted, so the web process reloads them. Restart the worker after changing task code:
 
-## Production preparation
+```sh
+docker compose -f compose.dev.yaml restart worker beat
+```
 
-Production Compose is a single-host deployment template. Complete application implementation and staging acceptance before using it for a real event. No infrastructure was deployed by generating these files.
+## Run in production
 
-1. Provision a Linux host, Docker/Compose, persistent storage and a domain pointing to the host. Permit inbound TCP 80/443 for Caddy. Permit outbound HTTPS/DNS and SendGrid TCP 587. Keep database/broker ports private.
-2. Resolve and test exact patched dependency versions; commit a lock file with hashes and pin release base/service images by digest. Included version families are intentionally upgradeable starter constraints, not a reproducible dependency lock.
-3. Build and publish the tested application image through your CI/registry workflow. For example: `docker build -t registry.example.com/event-tables:1.0.0 .`, followed by your authorized image push. Configure `APP_IMAGE` to the tested release or digest.
-4. Copy `.env.prod.example` to `.env.prod` and replace every placeholder. Authenticate the SendGrid sender domain; create a restricted Mail Send API key.
-5. Create `secrets/django_secret_key.txt`, `secrets/postgres_password.txt`, and `secrets/sendgrid_api_key.txt` on the host. Each contains only its secret. Use a cryptographically random Django key of at least 50 characters and a strong independent database password. Never use development credentials. Secrets and env files are excluded from Docker builds and git.
-6. Compose file secrets are mounted files, not an encrypted secret manager. Protect the host directory, backups and Docker access. Mounted files must be readable by container UID 10001; for Linux file mounts, use deliberate host ownership/ACLs (e.g. UID 10001 and mode 0400), and verify readability without printing the values. The PostgreSQL entrypoint starts as root and can read its password file.
-7. Configure off-host backups, alerting and a restore rehearsal. Implement the specified tenant authorization, MFA, throttling, audit, upload validation and durable outbox before launch.
+Production Compose expects a published application image, a public domain, and secret files on the host. It was not deployed by this repository. Web has no published port. Caddy serves HTTPS on ports 80 and 443 and proxies to Gunicorn. The database and Redis stay on a private network.
 
-The scaffold's official PostgreSQL image initializes `POSTGRES_USER` as a database superuser. For a production application, provision a separate non-superuser runtime role and a migration owner, grant only required schema/table/sequence privileges, and provide distinct release/runtime credentials by adapting the app environment and secrets. Do not expose generic Django superuser access to event coordinators. Database-role separation is a release-hardening requirement, not implemented in this scaffold.
+The release job is the only process that migrates and collects static files. After that, the web, worker, and beat processes connect as the non-superuser role `event_tables_app`. Migrations use `event_tables_migrate`. The PostgreSQL superuser `event_tables` is used only to create those roles.
 
-## First production release
+### 1. Build and publish the image
 
-Run these commands from the release directory, after configuration and secret files exist:
+Build from a tested commit. The production image must be built with `INSTALL_DEV` left at its default of `0`.
+
+```sh
+docker build -t registry.example.com/event-tables:1.0.0 .
+docker push registry.example.com/event-tables:1.0.0
+```
+
+### 2. Configure the host
+
+Point the domain at the host. Allow inbound TCP 80 and 443. Allow outbound HTTPS, DNS, and SendGrid on TCP 587. Keep database and Redis ports closed to the internet.
+
+```sh
+cp .env.prod.example .env.prod
+```
+
+Edit `.env.prod`:
+
+| Variable | Purpose |
+|---|---|
+| `APP_IMAGE` | Registry image and tag or digest from the build above |
+| `DOMAIN` | Public hostname, such as `events.example.com` |
+| `ACME_EMAIL` | Address Caddy uses for certificate notices |
+| `DEFAULT_FROM_EMAIL` | Authenticated SendGrid sender |
+
+Create `secrets/` and put one secret in each file, with no extra whitespace or quotes:
+
+```sh
+mkdir -p secrets
+openssl rand -base64 48 > secrets/django_secret_key.txt
+openssl rand -base64 32 > secrets/postgres_password.txt
+openssl rand -base64 32 > secrets/postgres_migration_password.txt
+openssl rand -base64 32 > secrets/postgres_runtime_password.txt
+```
+
+Put the restricted SendGrid Mail Send API key in `secrets/sendgrid_api_key.txt`. Authenticate the sender domain in SendGrid before the first campaign.
+
+The application containers run as UID 10001. On Linux, make the Django, migration, runtime, and SendGrid files readable by that user and by nobody else:
+
+```sh
+chown 10001:10001 secrets/django_secret_key.txt secrets/postgres_migration_password.txt secrets/postgres_runtime_password.txt secrets/sendgrid_api_key.txt
+chmod 0400 secrets/django_secret_key.txt secrets/postgres_migration_password.txt secrets/postgres_runtime_password.txt secrets/sendgrid_api_key.txt
+chown root:root secrets/postgres_password.txt
+chmod 0400 secrets/postgres_password.txt
+```
+
+The database entrypoint starts as root and reads `postgres_password.txt`. Do not commit `secrets/` or `.env.prod`.
+
+### 3. Start the database, migrate, then start the app
 
 ```sh
 docker compose --env-file .env.prod -f compose.prod.yaml config --quiet
@@ -65,40 +112,33 @@ docker compose --env-file .env.prod -f compose.prod.yaml up -d db redis
 docker compose --env-file .env.prod -f compose.prod.yaml --profile release run --rm release
 docker compose --env-file .env.prod -f compose.prod.yaml run --rm web python manage.py check --deploy
 docker compose --env-file .env.prod -f compose.prod.yaml up -d web worker beat proxy
-docker compose --env-file .env.prod -f compose.prod.yaml exec web python manage.py createsuperuser
 docker compose --env-file .env.prod -f compose.prod.yaml ps
 ```
 
-The release job runs migrations and collects static files once. Never run migrations in every web/worker entrypoint. The web health check verifies PostgreSQL and Redis; it does not confirm migration completeness, worker health or successful mail delivery. Review any `check --deploy` warning and its rationale before launching. HSTS subdomain inclusion and preload are intentionally disabled until the domain owner confirms that every affected subdomain supports HTTPS.
+If `release` fails, do not start `web`, `worker`, `beat`, or `proxy`. Fix the migration error first.
 
-Caddy provisions certificates for the configured public domain. Web has no published port; Caddy supplies trusted forwarding headers. WhiteNoise serves collected static assets. Private files have no public media route; implement authenticated download views. Internal backend networking isolates DB/Redis from direct inbound access; web and workers additionally have egress access for SendGrid. Redis has no password in this isolated single-host starter, so only trusted application containers should join its network; add ACL credentials/TLS if the trust or network model changes.
+Create the first platform administrator. That account needs a TOTP device on the next login. Organization owners and event administrators also require TOTP. Check-in staff do not.
 
-Run only one beat service. The starter has no periodic business jobs registered yet. Celery result payloads are disabled; implement persisted job progress in the application database. A worker ping can be checked with the same `celery -A config inspect ping` command used in development, using the production Compose flags.
+```sh
+docker compose --env-file .env.prod -f compose.prod.yaml exec web python manage.py createsuperuser
+```
 
-## Subsequent release and rollback
+Open `https://<DOMAIN>/`. Health checks are `https://<DOMAIN>/health/live/` and `https://<DOMAIN>/health/ready/`. Ready means PostgreSQL and Redis answered. It does not prove that migrations finished or that mail was delivered.
 
-This baseline uses a maintenance window. Take a verified backup, stop proxy/web/worker/beat, update `APP_IMAGE`, pull the new image, run the release job, run deployment checks, then start services and smoke-test login, health, a job and email. Stopping all writers avoids schema/asset conflicts while migrations run; static files are shared and changed by `collectstatic`.
+HSTS subdomain inclusion and preload stay off until every subdomain on that domain serves HTTPS. Review any other `check --deploy` warning before inviting staff.
 
-Do not start services if the release job fails. Investigate the failed migration and database state. Reverting only the image is safe only if schema compatibility was tested. Otherwise restore the matched database/private-files backup with the previous image and static build. Never automate destructive reverse migrations without review. Zero-downtime releases require backward-compatible migrations, versioned static assets and a different rollout design.
+Send mail only to addresses you control until the sender domain and webhook are verified. Guest addresses in tests and demos should use `@example.test`.
 
-## Backup and recovery
+### 4. Ship a later release
 
-- Schedule a daily PostgreSQL `pg_dump -Fc`, encrypted off-host copy, and private-data backup; coordinate the files and database under maintenance or with a consistent snapshot strategy.
-- Keep dump data out of terminal output. Use a dedicated backup identity and do not put passwords in command arguments.
-- Retain release image references, configuration (without exposed secrets), and required secret recovery material in the organization's secret store.
-- Keep Caddy data if avoiding certificate reissuance matters. Redis/beat state is secondary to PostgreSQL; rebuild pending jobs through database reconciliation once implemented.
-- Restore into a clean isolated environment, validate row counts and sample seat assignments, verify private-file downloads and check that no real email sends occur during recovery tests.
-- Baseline targets are RPO 24h / RTO 4h; measure them. Enable PITR for a tighter database RPO.
+Take a backup first. See [docs/operations.md](docs/operations.md). Then stop the writers, replace `APP_IMAGE`, and migrate before starting the new processes:
 
-Never use production `down -v` as a deployment step. Rotating `postgres_password.txt` does not change an existing database user's password: rotate the role password in PostgreSQL and its application secret together. Rotate SendGrid and Django keys using a planned procedure; Django key changes can invalidate sessions and signed guest links.
+```sh
+docker compose --env-file .env.prod -f compose.prod.yaml stop proxy web worker beat
+docker compose --env-file .env.prod -f compose.prod.yaml pull
+docker compose --env-file .env.prod -f compose.prod.yaml --profile release run --rm release
+docker compose --env-file .env.prod -f compose.prod.yaml run --rm web python manage.py check --deploy
+docker compose --env-file .env.prod -f compose.prod.yaml up -d web worker beat proxy
+```
 
-## Verification performed on the generated package
-
-- Both development and production Compose files passed `docker compose ... config --quiet` (production used `.env.prod.example`).
-- Container build and runtime smoke tests were not executed: this session was denied access to the Docker Desktop Linux-engine pipe.
-- Consequently, image pulls/builds, database migrations, mail delivery, HTTPS issuance and application runtime remain to be verified on your Docker host.
-- The included functional acceptance cases apply to the future application; they are not represented as passing tests of this scaffold.
-
-## Reference behavior
-
-The configuration follows [Docker Compose production guidance](https://docs.docker.com/compose/how-tos/production/) and [file-mounted Compose secrets](https://docs.docker.com/compose/how-tos/use-secrets/). Email uses [MailDev's SMTP/web ports](https://maildev.github.io/maildev/docs/quickstart/) in development and [SendGrid SMTP integration](https://www.twilio.com/docs/sendgrid/for-developers/sending-email/integrating-with-the-smtp-api) in production. Review the [Django deployment checklist](https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/) for each release.
+Run only one beat service. Do not run `down -v` as part of a release. That command deletes the database and private files.

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ event.name }} seating</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <main id="content">
+    <h1>{{ event.name }}</h1>
+    <p>{{ booking.party_name|default:"Your booking" }}</p>
+    {% if pending %}<p>Your seating is still pending.</p>{% else %}
+      <ul>{% for seat in seats %}<li>{{ seat.display_name }}: table {{ seat.table_label }}, seat {{ seat.seat_label }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% if publication_number %}<p>Publication {{ publication_number }}</p>{% endif %}
+  </main>
+</body>
+</html>

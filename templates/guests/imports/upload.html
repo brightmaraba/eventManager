@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Import guests{% endblock %}
+{% block content %}
+  <h1>Import guests</h1>
+  <form method="post" enctype="multipart/form-data" class="panel">
+    {% csrf_token %}
+    <label>CSV file <input class="control" type="file" name="csv" accept=".csv,text/csv" required></label>
+    <label>Duplicates
+      <select class="control" name="duplicate_policy">
+        <option value="reject">Reject duplicate emails in the file</option>
+        <option value="aggregate">Combine duplicate emails</option>
+      </select>
+    </label>
+    <label>Existing bookings
+      <select class="control" name="quantity_policy">
+        <option value="replace">Replace the total ticket count</option>
+        <option value="additive">Add tickets to the current total</option>
+      </select>
+    </label>
+    <label><input type="checkbox" name="replace_roster" value="yes"> Replace the whole roster (bookings missing from the file will be previewed for removal)</label>
+    <label><input type="checkbox" name="confirm_replace_roster" value="yes"> I confirm those removals</label>
+    <label><input type="checkbox" name="force_new" value="yes"> Start a new import even if this file was already committed</label>
+    <button type="submit">Preview import</button>
+  </form>
+  <h2>Recent imports</h2>
+  <ul>{% for batch in batches %}<li><a href="{% url 'import-detail' event.id batch.id %}">{{ batch.created_at }} · {{ batch.state }}</a></li>{% endfor %}</ul>
+{% endblock %}

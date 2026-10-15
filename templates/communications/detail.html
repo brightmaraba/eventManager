@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ campaign.subject }}{% endblock %}
+{% block content %}
+  <h1>{{ campaign.subject }}</h1>
+  <p>{{ campaign.get_kind_display }} · {{ campaign.status }}</p>
+  <form method="post">{% csrf_token %}<button name="action" value="preview" type="submit">Preview</button></form>
+  <form method="post" class="panel">{% csrf_token %}
+    <input type="hidden" name="action" value="test">
+    <label>Test recipient <input class="control" type="email" name="test_recipient" required></label>
+    <button type="submit">Send test</button>
+  </form>
+  <form method="post" class="panel">{% csrf_token %}
+    <input type="hidden" name="action" value="send">
+    <label>Schedule (optional, UTC) <input class="control" name="scheduled_at" placeholder="2026-10-20T18:00:00+00:00"></label>
+    <button type="submit">Send or schedule</button>
+  </form>
+  <form method="post">{% csrf_token %}<input type="hidden" name="action" value="cancel"><label>Reason <input class="control" name="reason"></label><button class="secondary" type="submit">Cancel campaign</button></form>
+  {% if preview %}
+    <section class="panel">
+      <h2>Preview for one recipient</h2>
+      <pre>{{ preview.text }}</pre>
+    </section>
+  {% endif %}
+{% endblock %}

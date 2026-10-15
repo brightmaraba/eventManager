@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Organizations{% endblock %}
+{% block content %}
+  <h1>Organizations</h1>
+  <ul>{% for organization in organizations %}<li>
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="organization_id" value="{{ organization.id }}">
+      <button type="submit">{{ organization.name }}</button>
+    </form>
+  </li>{% empty %}<li>No organizations yet.</li>{% endfor %}</ul>
+  {% if request.user.is_platform_admin %}
+    <form method="post" class="panel">{% csrf_token %}
+      <label>New organization <input class="control" name="name" required></label>
+      <button type="submit">Create organization</button>
+    </form>
+  {% endif %}
+{% endblock %}

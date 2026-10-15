@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>{{ event.name }} {{ kind }}</title>
+  <link rel="stylesheet" href="/static/reports/print.css">
+</head>
+<body class="paper-{{ paper }} orient-{{ orientation }} mode-{{ fit_mode }}">
+  <header>
+    <h1>{{ event.name }}</h1>
+    <p>{{ label }} · {{ generated_at }} · {{ kind }}</p>
+  </header>
+  {% if kind == "room_plan" and snapshot.room %}
+    <svg viewBox="0 0 {{ snapshot.room.width_m }} {{ snapshot.room.height_m }}" role="img" aria-label="Room plan">
+      {% for table in snapshot.tables %}
+        <g>
+          {% if table.shape == "round" %}
+            <circle cx="{{ table.x }}" cy="{{ table.y }}" r="{{ table.width_m }}" fill="none" stroke="black"/>
+          {% else %}
+            <rect x="{{ table.x }}" y="{{ table.y }}" width="{{ table.width_m }}" height="{{ table.height_m }}" fill="none" stroke="black"/>
+          {% endif %}
+          <text x="{{ table.x }}" y="{{ table.y }}" font-size="0.4">{{ table.label }}</text>
+          {% for seat in table.seats %}
+            <text x="{{ seat.rel_x }}" y="{{ seat.rel_y }}" font-size="0.25">{{ table.label }}-{{ seat.label }}</text>
+          {% endfor %}
+        </g>
+      {% endfor %}
+    </svg>
+    <p>Legend: table and seat labels. Capacity is the count of active seats.</p>
+  {% elif kind == "table_cards" or kind == "place_cards" or kind == "seating_slips" %}
+    {% for row in rows %}
+      <article class="card">
+        <h2>{{ row.table_label }}</h2>
+        <p>{{ row.seat_label }} · {{ row.display_name }}</p>
+        {% if show_email %}<p>{{ row.email }}</p>{% endif %}
+      </article>
+    {% endfor %}
+  {% else %}
+    <table>
+      <thead><tr><th>Party</th><th>Guest</th><th>Table</th><th>Seat</th>{% if show_email %}<th>Email</th>{% endif %}</tr></thead>
+      <tbody>
+        {% if kind == "alpha_roster" %}
+          {% for row in alpha_rows %}<tr><td>{{ row.party_name }}</td><td>{{ row.display_name }}</td><td>{{ row.table_label }}</td><td>{{ row.seat_label }}</td>{% if show_email %}<td>{{ row.email }}</td>{% endif %}</tr>{% endfor %}
+        {% else %}
+          {% for row in rows %}<tr><td>{{ row.party_name }}</td><td>{{ row.display_name }}</td><td>{{ row.table_label }}</td><td>{{ row.seat_label }}</td>{% if show_email %}<td>{{ row.email }}</td>{% endif %}</tr>{% endfor %}
+        {% endif %}
+      </tbody>
+    </table>
+  {% endif %}
+</body>
+</html>

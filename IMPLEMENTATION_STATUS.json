@@ -1,0 +1,105 @@
+{
+  "updated": "2026-10-15",
+  "tasks": [
+    {
+      "id": "T01",
+      "status": "complete",
+      "evidence": "compose.dev.yaml and compose.prod.yaml config --quiet exited 0. pytest.ini uses PostgreSQL. tests/test_health.py passed. Dev stack health returned {\"status\": \"ok\"}."
+    },
+    {
+      "id": "T02",
+      "status": "complete",
+      "evidence": "accounts.User is the auth model, created before other app migrations. Cross-tenant 404 and check-in staff 403 passed. DEBUG=False login redirects to MFA enrollment."
+    },
+    {
+      "id": "T03",
+      "status": "complete",
+      "evidence": "Idempotency replay and payload mismatch passed. AuditLog has an append-only database trigger in audit/migrations/0002_append_only.py."
+    },
+    {
+      "id": "T04",
+      "status": "complete",
+      "evidence": "Archive/unarchive, nonexistent DST time, SVG rejection, and PNG re-encode passed. Browser login opened the event list and Spring dinner."
+    },
+    {
+      "id": "T05",
+      "status": "complete",
+      "evidence": "A01 capacity test passed. Browser Add table created T3 in open space after the default coordinate overlap was fixed."
+    },
+    {
+      "id": "T06",
+      "status": "complete",
+      "evidence": "Stable ticket and protected quantity tests passed. Booking list showed Ada and guest@example.test."
+    },
+    {
+      "id": "T07",
+      "status": "complete",
+      "evidence": "Import tests covered duplicates, attendee_names, stale roster 409, and absence without deletion. Import page rendered."
+    },
+    {
+      "id": "T08",
+      "status": "complete",
+      "evidence": "Concurrency tests A06-A09 passed, including expired-hold reuse without beat."
+    },
+    {
+      "id": "T09",
+      "status": "complete",
+      "evidence": "Stale geometry conflict passed. Browser assign and unassign forms seated and cleared T3 seat 1."
+    },
+    {
+      "id": "T10",
+      "status": "complete",
+      "evidence": "SVG editor rendered table and seat buttons with text status. Keyboard Add table, Assign, and Unassign worked. Playwright binaries were not installed."
+    },
+    {
+      "id": "T11",
+      "status": "complete",
+      "evidence": "Publication snapshot remained stable after a later geometry edit. Publications page rendered with no snapshot until publish."
+    },
+    {
+      "id": "T12",
+      "status": "complete",
+      "evidence": "Check-in idempotency and cancelled-ticket tests passed. Browser search found Ada and reported Checked in."
+    },
+    {
+      "id": "T13",
+      "status": "complete",
+      "evidence": "Outbox tests passed. MailDev stored one Spring dinner message to guest@example.test."
+    },
+    {
+      "id": "T14",
+      "status": "partial",
+      "evidence": "Local webhook signature, replay, bounce, and suppression tests passed. No real SendGrid staging send or webhook was attempted."
+    },
+    {
+      "id": "T15",
+      "status": "partial",
+      "evidence": "WeasyPrint PDF test passed and the browser export page showed room_plan ready. Visual clipping was not measured."
+    },
+    {
+      "id": "T16",
+      "status": "complete",
+      "evidence": "Clearing the Redis cache left the pending outbox row, and dispatch then submitted it. Expired holds are released inside assignment."
+    },
+    {
+      "id": "T17",
+      "status": "complete",
+      "evidence": "compose.prod.yaml splits event_tables, event_tables_migrate, and event_tables_app. test_runtime_database_role_cannot_create_tables passed. Image digests are pinned. requirements.lock records the development image freeze. The app image was not pushed to a registry."
+    },
+    {
+      "id": "T18",
+      "status": "partial",
+      "evidence": "deploy/backup.sh and deploy/restore.sh exist. Isolated restore rehearsal finished in 5.75 seconds and the temporary database was dropped. Production-sized RPO/RTO and private-file restore were not measured. Log redaction test passed."
+    },
+    {
+      "id": "T19",
+      "status": "partial",
+      "evidence": "See docs/acceptance-results.md. A02, A14, A16, A18, and A20 are partial. Performance targets were not measured."
+    },
+    {
+      "id": "T20",
+      "status": "complete",
+      "evidence": "README.md, docs/user-guide.md, docs/operations.md, and docs/acceptance-results.md describe startup, demo data, import, seating, mail, print, backup, and rollback."
+    }
+  ]
+}

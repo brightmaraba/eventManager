@@ -1,0 +1,10 @@
+{% autoescape off %}Seating change: {{ event_name }}
+{{ when }} ({{ timezone }})
+{{ venue }}
+Tickets: {{ ticket_total }}
+{% if pending %}Seating is pending.{% else %}{% for seat in seats %}{{ seat.display_name }} table {{ seat.table_label }} seat {{ seat.seat_label }}
+{% endfor %}{% endif %}
+{% if guest_url %}Your seating: {{ guest_url }}{% endif %}
+{{ accessibility_notes }}
+{{ contact_name }} {{ contact_email }}
+{% endautoescape %}

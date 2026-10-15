@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Layout · {{ event.name }}{% endblock %}
+{% block extra_head %}<link rel="stylesheet" href="{% static 'layouts/editor/editor.css' %}">{% endblock %}
+{% block content %}
+  <h1>Layout for {{ event.name }}</h1>
+  <p>{{ capacity }} active seats · revision {{ layout.layout_revision }}</p>
+  <div class="legend" aria-label="Seat status">
+    <span>Available</span><span>Held</span><span>Assigned</span><span>Blocked</span><span>Checked in</span>
+  </div>
+  <div class="editor-shell" data-editor data-event-id="{{ event.id }}" data-can-edit="{{ can_edit|yesno:'yes,no' }}">
+    <div class="toolbar">
+      <button type="button" id="zoom-in">Zoom in</button>
+      <button type="button" id="zoom-out">Zoom out</button>
+      <button type="button" id="fit-room">Fit room</button>
+      <button type="button" id="undo" {% if not can_edit %}disabled{% endif %}>Undo</button>
+    </div>
+    <div class="editor-grid">
+      <svg id="room-canvas" role="application" aria-label="Room canvas" tabindex="0"></svg>
+      <aside>
+        <h2>Unassigned tickets</h2>
+        <label>Search <input id="ticket-search" class="control" type="search"></label>
+        <ul id="ticket-list"></ul>
+        <p id="conflict" class="error" hidden>The layout changed. Refresh before saving over someone else's edit.</p>
+        <button type="button" id="refresh-layout">Refresh layout</button>
+      </aside>
+    </div>
+  </div>
+  {% if can_edit %}
+    <section class="panel">
+      <h2>Keyboard and form actions</h2>
+      <form method="post" action="{% url 'tables' event.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="idempotency_key" value="">
+        <button type="submit" id="add-table">Add table</button>
+      </form>
+      <form method="post" action="{% url 'assignments' event.id %}" class="panel">
+        {% csrf_token %}
+        <h3>Assign a ticket</h3>
+        <label>Ticket <select class="control" name="ticket_id">{% for row in layout.unassigned %}<option value="{{ row.ticket_id }}">{{ row.display_name }}</option>{% endfor %}</select></label>
+        <label>Seat <select class="control" name="seat_id">{% for table in layout.tables %}{% for seat in table.seats %}<option value="{{ seat.id }}">{{ table.label }}-{{ seat.label }}</option>{% endfor %}{% endfor %}</select></label>
+        <button type="submit">Assign</button>
+      </form>
+      <form method="post" action="{% url 'assignments' event.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="unassign">
+        <label>Ticket to unassign <select class="control" name="ticket_id">{% for table in layout.tables %}{% for seat in table.seats %}{% if seat.occupancy.kind == "ticket" %}<option value="{{ seat.occupancy.ticket_id }}">{{ seat.occupancy.label }}</option>{% endif %}{% endfor %}{% endfor %}</select></label>
+        <button type="submit">Unassign</button>
+      </form>
+      <form method="post" action="{% url 'assignment-swap' event.id %}">
+        {% csrf_token %}
+        <label>First seat <select class="control" name="seat_a">{% for table in layout.tables %}{% for seat in table.seats %}<option value="{{ seat.id }}">{{ table.label }}-{{ seat.label }}</option>{% endfor %}{% endfor %}</select></label>
+        <label>Second seat <select class="control" name="seat_b">{% for table in layout.tables %}{% for seat in table.seats %}<option value="{{ seat.id }}">{{ table.label }}-{{ seat.label }}</option>{% endfor %}{% endfor %}</select></label>
+        <button type="submit">Swap</button>
+      </form>
+      <form method="post" action="{% url 'holds' event.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="scope" value="table">
+        <label>Hold table <select class="control" name="table_id">{% for table in layout.tables %}<option value="{{ table.id }}">{{ table.label }}</option>{% endfor %}</select></label>
+        <label>Purpose <input class="control" name="purpose" value="VIP"></label>
+        <button type="submit">Hold table</button>
+      </form>
+      <form method="post" action="{% url 'assignments' event.id %}">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="group">
+        <label>Party <select class="control" name="booking_id">{% for booking in bookings %}<option value="{{ booking.id }}">{{ booking.party_name|default:booking.original_email }}</option>{% endfor %}</select></label>
+        <label>Table <select class="control" name="table_id">{% for table in layout.tables %}<option value="{{ table.id }}">{{ table.label }}</option>{% endfor %}</select></label>
+        <label><input type="checkbox" name="preview" value="yes"> Preview only</label>
+        <label><input type="checkbox" name="partial" value="yes"> Allow a partial party</label>
+        <button type="submit">Seat party</button>
+      </form>
+    </section>
+  {% endif %}
+  <script type="module" src="{% static 'layouts/editor/editor.js' %}"></script>
+{% endblock %}
