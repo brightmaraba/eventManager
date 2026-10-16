@@ -7,7 +7,17 @@
     <thead><tr><th>Line</th><th>Email</th><th>Tickets</th><th>Action</th><th>Errors</th></tr></thead>
     <tbody>{% for row in rows %}<tr><td>{{ row.line_number }}</td><td>{{ row.email }}</td><td>{{ row.ticket_count }}</td><td>{{ row.action }}</td><td>{{ row.errors|join:"; " }}</td></tr>{% endfor %}</tbody>
   </table>
-  <form method="post" action="{% url 'import-commit' event.id batch.id %}">{% csrf_token %}<button type="submit">Commit preview</button></form>
-  <form method="post" action="{% url 'import-valid' event.id batch.id %}">{% csrf_token %}<button class="secondary" type="submit">Preview valid rows only</button></form>
-  <p><a href="{% url 'import-errors' event.id batch.id %}">Download error report</a></p>
+  {% if batch.state == "preview" %}
+    {% if batch.summary.errors %}
+      <p>Fix the file and upload it again, or continue with only the valid rows.</p>
+      <form method="post" action="{% url 'import-valid' event.id batch.id %}">{% csrf_token %}<button type="submit">Preview valid rows only</button></form>
+    {% else %}
+      <form method="post" action="{% url 'import-commit' event.id batch.id %}">{% csrf_token %}<button type="submit">Commit preview</button></form>
+    {% endif %}
+  {% elif batch.state == "committed" %}
+    <p>This import was saved{% if batch.committed_at %} on {{ batch.committed_at|date:"j F Y, H:i" }}{% endif %}. <a href="{% url 'bookings' event.id %}">View bookings</a> · <a href="{% url 'imports' event.id %}">Import another file</a></p>
+  {% else %}
+    <p>This import failed. <a href="{% url 'imports' event.id %}">Upload the file again</a>.</p>
+  {% endif %}
+  {% if batch.summary.errors %}<p><a href="{% url 'import-errors' event.id batch.id %}">Download error report</a></p>{% endif %}
 {% endblock %}

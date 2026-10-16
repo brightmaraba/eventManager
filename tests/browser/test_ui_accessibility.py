@@ -89,7 +89,9 @@ def test_dragging_a_table_does_not_rebuild_the_canvas(page, live_server, owner, 
     page.mouse.move(box["x"] + box["width"] / 2 + 48, box["y"] + box["height"] / 2 + 24, steps=6)
     transform = page.evaluate("() => document.querySelector('#room-canvas [data-table-id]').getAttribute('transform')")
     rebuilds = page.evaluate("() => document.querySelector('#room-canvas').dataset.rebuilds")
-    page.mouse.up()
+    # Wait for the save so teardown does not truncate tables while the live server is mid-request.
+    with page.expect_response(lambda response: response.request.method == "PATCH" and "layout.json" in response.url):
+        page.mouse.up()
     assert transform is not None and transform.startswith("translate")
     assert rebuilds == "0"
 

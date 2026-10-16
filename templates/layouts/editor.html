@@ -12,11 +12,15 @@
     <div class="toolbar glass">
       <button type="button" id="zoom-in">Zoom in</button>
       <button type="button" id="zoom-out">Zoom out</button>
+      <button type="button" id="fit-tables">Fit tables</button>
       <button type="button" id="fit-room">Fit room</button>
       <button type="button" id="undo" {% if not can_edit %}disabled{% endif %}>Undo</button>
     </div>
     <div class="editor-grid">
-      <svg id="room-canvas" role="application" aria-label="Room canvas" tabindex="0"></svg>
+      <div>
+        <svg id="room-canvas" role="application" aria-label="Room canvas" aria-describedby="canvas-hint" tabindex="0"></svg>
+        <p id="canvas-hint" class="canvas-hint">Drag empty space to pan, scroll or press + and − to zoom. Hover a seat to see who sits there.</p>
+      </div>
       <aside>
         <h2>Unassigned tickets</h2>
         <label>Search <input id="ticket-search" class="control" type="search"></label>

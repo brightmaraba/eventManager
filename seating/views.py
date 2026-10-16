@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.views.decorators.http import require_http_methods
@@ -10,7 +11,7 @@ from guests.models import Booking
 from seating.services import assign, group_assign, hold_seats, hold_table, release_hold, swap as swap_seats, unassign
 
 
-def _respond(request, event, result):
+def _respond(request, event, result, message=""):
     if wants_json(request):
         from layouts.services import layout_payload
 
@@ -18,7 +19,29 @@ def _respond(request, event, result):
         event.refresh_from_db()
         body["layout"] = layout_payload(event)
         return JsonResponse(body, status=result.status)
+    if message:
+        messages.success(request, message)
     return redirect("layout-editor", event_id=event.id)
+
+
+def _hold_message(data):
+    if data.get("action") == "release":
+        return "Hold released."
+    return "Table held." if data.get("scope") == "table" else "Seats held."
+
+
+def _assignment_message(data, body):
+    action = data.get("action")
+    if action == "group":
+        count = len(body.get("assignments", []))
+        if body.get("preview"):
+            return f"Preview: {count} ticket{'' if count == 1 else 's'} would be seated at this table. Nothing was saved."
+        if not count:
+            return "No tickets were seated. The party may already be seated."
+        return f"Seated {count} ticket{'' if count == 1 else 's'}."
+    if body.get("unchanged"):
+        return "Nothing changed."
+    return "Ticket unassigned." if action == "unassign" else "Ticket assigned."
 
 
 @require_login
@@ -40,7 +63,7 @@ def holds(request, event_id):
         return hold_seats(event=event, seat_ids=seat_ids, purpose=data.get("purpose", "Hold"), actor=request.user, request_id=request.request_id, reason=data.get("reason", ""))
 
     result = execute(organization=event.organization, operation="hold", key=key, payload={"action": data.get("action"), "table_id": str(data.get("table_id", "")), "purpose": data.get("purpose", "")}, fn=run)
-    return _respond(request, event, result)
+    return _respond(request, event, result, _hold_message(data))
 
 
 @require_login
@@ -70,14 +93,7 @@ def assignments(request, event_id):
         payload={"ticket_id": str(data.get("ticket_id", "")), "seat_id": str(data.get("seat_id", "")), "booking_id": str(data.get("booking_id", "")), "action": data.get("action", "")},
         fn=run,
     )
-    if wants_json(request):
-        event.refresh_from_db()
-        from layouts.services import layout_payload
-
-        body = dict(result.body)
-        body["layout"] = layout_payload(event)
-        return JsonResponse(body, status=result.status)
-    return redirect("layout-editor", event_id=event.id)
+    return _respond(request, event, result, _assignment_message(data, result.body))
 
 
 @require_login
@@ -96,4 +112,5 @@ def swap(request, event_id):
     result = execute(organization=event.organization, operation="swap", key=key, payload={"a": str(data.get("seat_a")), "b": str(data.get("seat_b"))}, fn=run)
     if wants_json(request):
         return JsonResponse(result.body, status=result.status)
+    messages.success(request, "Seats swapped.")
     return redirect("layout-editor", event_id=event.id)

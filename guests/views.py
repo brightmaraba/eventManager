@@ -1,3 +1,4 @@
+from django.contrib import messages
 from django.http import HttpResponse
 from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
@@ -42,6 +43,7 @@ def import_commit(request, event_id, batch_id):
     event = load_event(request, event_id, can_import)
     batch = ImportBatch.objects.get(pk=batch_id, event=event)
     commit_import(event=event, batch=batch, actor=request.user, request_id=request.request_id)
+    messages.success(request, "Import saved.")
     return redirect("import-detail", event_id=event.id, batch_id=batch.id)
 
 
