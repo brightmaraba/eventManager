@@ -17,13 +17,13 @@ from layouts.services import create_table
 from seating.models import SeatOccupancy
 from seating.services import group_assign, hold_table
 
-GALA_NAME = "Kalenjin Association Gala 2026"
-GALA_SLUG = "kalenjin-association-gala-2026"
-ORG_NAME = "Kalenjin Community Association & Welfare NSW"
-ORG_SLUG = "kalenjin-community-nsw"
+GALA_NAME = "KACW GALA NIGHT"
+GALA_SLUG = "kacw-gala-night"
+ORG_NAME = "KACW NSW"
+ORG_SLUG = "kacw-nsw"
 TABLE_COUNT = 22
 SEATS_PER_TABLE = 10
-CAMPAIGN_SUBJECT = "Your Kalenjin Association Gala 2026 ticket"
+CAMPAIGN_SUBJECT = "Your KACW GALA NIGHT ticket"
 
 
 def ticket_quantity(amount):
@@ -144,6 +144,9 @@ def ensure_gala_event(actor):
         defaults={"role": Membership.Role.OWNER},
     )
     event = organization.events.filter(slug=GALA_SLUG).first()
+    if event is not None and event.name != GALA_NAME:
+        event.name = GALA_NAME
+        event.save(update_fields=["name"])
     if event is None:
         event = create_event(
             actor=actor,

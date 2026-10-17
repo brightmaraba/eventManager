@@ -84,7 +84,7 @@ def test_send_queues_every_guest(client, owner, event, settings):
 def test_home_opens_the_gala_door(client, owner, event, settings):
     settings.DEBUG = True
     user, _organization = owner
-    event.slug = "kalenjin-association-gala-2026"
+    event.slug = "kacw-gala-night"
     event.save(update_fields=["slug"])
     client.force_login(user)
     response = client.get("/")

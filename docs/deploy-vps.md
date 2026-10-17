@@ -183,6 +183,16 @@ The first sign-in asks for an authenticator code. Platform administrators, organ
 
 ## 8. Guest list
 
-A new production database contains the administrator and an empty event list. The Kalenjin Association Gala 2026 seating on a development machine is not copied by the steps above. `load_gala` runs only while debug is on, and the payment file is not in the image.
+A new production database contains the administrator and an empty event list. Load the payment file from the project directory. It is not inside the image. The command seats every row and sends the ticket emails, about 60 a minute.
 
-Load that roster before the doors open, then use **Send** on the Door screen. `docker compose down -v` deletes the database and the private files. Backups and a later release are in [operations.md](operations.md).
+```sh
+cd /home/brightkoech/Projects/eventManager
+docker compose --env-file .env.prod -f compose.prod.yaml run --rm \
+  -v "$PWD/core/management/commands/load_gala.py:/app/core/management/commands/load_gala.py:ro" \
+  -v "$PWD/guests/gala.py:/app/guests/gala.py:ro" \
+  -v "$PWD/templates/communications/email/seating.html:/app/templates/communications/email/seating.html:ro" \
+  -v "$PWD/unified_payments_with_ids.csv:/tmp/payments.csv:ro" \
+  web python manage.py load_gala --csv /tmp/payments.csv
+```
+
+Running it again does not create a second set of tickets or send the campaign twice. `docker compose down -v` deletes the database and the private files. Backups and a later release are in [operations.md](operations.md).

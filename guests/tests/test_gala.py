@@ -1,5 +1,9 @@
 import pytest
+from django.core import mail
+from django.core.management import call_command
+from django.core.management.base import CommandError
 
+from accounts.models import User
 from communications.provider import inline_images
 from communications.rendering import render_message
 from communications.services import create_campaign
@@ -115,3 +119,49 @@ def test_payment_rows_share_a_table_and_email_a_ticket(owner, settings):
     assert images[0][0] == "kcaw-logo"
     assert images[0][1].startswith(b"\x89PNG")
     assert any(name.startswith("qr-") and payload.startswith(b"\x89PNG") for name, payload, _filename in images)
+
+
+@pytest.mark.django_db
+def test_load_gala_imports_the_payment_file_and_sends_mail(settings, monkeypatch, tmp_path):
+    settings.DEBUG = False
+    settings.PUBLIC_BASE_URL = "https://libranconsult.tech"
+    settings.EMAIL_HOST = "smtp.sendgrid.net"
+    settings.EMAIL_HOST_PASSWORD = "test-key"
+    settings.DEFAULT_FROM_EMAIL = "Kokwet NSW Association <postmaster@communitycore.com.au>"
+    settings.EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+    monkeypatch.setenv("ADMIN_EMAIL", "brightkoech@libranconsult.tech")
+    User.objects.create_user(
+        "brightkoech@libranconsult.tech",
+        "unused-password",
+        is_platform_admin=True,
+        is_staff=True,
+        is_superuser=True,
+    )
+    path = tmp_path / "payments.csv"
+    path.write_text(
+        "Payment ID,Ticket Number,Source,Stripe ID,Created date (UTC),Amount,Customer Email,Customer Ticket No,Customer Ticket Count\n"
+        "PAY-1,TKT-0001,Stripe payment,ch_a,16/10/2026 7:47,200,a@example.test,1,1\n"
+        "PAY-2,TKT-0002,Stripe payment,ch_b,16/10/2026 7:20,100,b@example.test,1,1\n",
+        encoding="utf-8",
+    )
+    call_command("load_gala", csv=str(path))
+    assert Ticket.objects.filter(public_code__in=["TKT-0001", "TKT-0001-2", "TKT-0002"]).count() == 3
+    assert len(mail.outbox) == 2
+    assert {message.to[0] for message in mail.outbox} == {"a@example.test", "b@example.test"}
+    call_command("load_gala", csv=str(path))
+    event = Ticket.objects.get(public_code="TKT-0001").booking.event
+    assert event.name == "KACW GALA NIGHT"
+    assert event.slug == "kacw-gala-night"
+    assert event.organization.name == "KACW NSW"
+    assert event.organization.slug == "kacw-nsw"
+    assert Ticket.objects.filter(booking__event=event).count() == 3
+    assert len(mail.outbox) == 2
+
+
+@pytest.mark.django_db
+def test_load_gala_requires_an_administrator(settings, tmp_path):
+    settings.DEBUG = False
+    path = tmp_path / "payments.csv"
+    path.write_text("Payment ID,Ticket Number,Stripe ID,Amount,Customer Email\n", encoding="utf-8")
+    with pytest.raises(CommandError, match="administrator"):
+        call_command("load_gala", csv=str(path))
