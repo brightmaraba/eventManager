@@ -188,11 +188,8 @@ A new production database contains the administrator and an empty event list. Lo
 ```sh
 cd /home/brightkoech/Projects/eventManager
 docker compose --env-file .env.prod -f compose.prod.yaml run --rm \
-  -v "$PWD/core/management/commands/load_gala.py:/app/core/management/commands/load_gala.py:ro" \
-  -v "$PWD/guests/gala.py:/app/guests/gala.py:ro" \
-  -v "$PWD/templates/communications/email/seating.html:/app/templates/communications/email/seating.html:ro" \
-  -v "$PWD/unified_payments_with_ids.csv:/tmp/payments.csv:ro" \
-  web python manage.py load_gala --csv /tmp/payments.csv
+  -v "$PWD/unified_payments_with_ids.csv:/app/unified_payments_with_ids.csv:ro" \
+  web python manage.py load_gala
 ```
 
 Running it again does not create a second set of tickets or send the campaign twice. `docker compose down -v` deletes the database and the private files. Backups and a later release are in [operations.md](operations.md).
