@@ -107,16 +107,14 @@ openssl rand -base64 32 > secrets/postgres_runtime_password.txt
 
 Put the restricted SendGrid Mail Send API key in `secrets/sendgrid_api_key.txt`. Authenticate the sender domain in SendGrid before the first campaign.
 
-The application containers run as UID 10001. On Linux, make the Django, migration, runtime, and SendGrid files readable by that user and by nobody else:
+The application containers, including release, run as UID 10001. On Linux, make every secret file readable by that user and by nobody else. The database container starts as root and can still read `postgres_password.txt`.
 
 ```sh
-chown 10001:10001 secrets/django_secret_key.txt secrets/postgres_migration_password.txt secrets/postgres_runtime_password.txt secrets/sendgrid_api_key.txt
-chmod 0400 secrets/django_secret_key.txt secrets/postgres_migration_password.txt secrets/postgres_runtime_password.txt secrets/sendgrid_api_key.txt
-chown root:root secrets/postgres_password.txt
-chmod 0400 secrets/postgres_password.txt
+chown 10001:10001 secrets/django_secret_key.txt secrets/postgres_password.txt secrets/postgres_migration_password.txt secrets/postgres_runtime_password.txt secrets/sendgrid_api_key.txt
+chmod 0400 secrets/django_secret_key.txt secrets/postgres_password.txt secrets/postgres_migration_password.txt secrets/postgres_runtime_password.txt secrets/sendgrid_api_key.txt
 ```
 
-The database entrypoint starts as root and reads `postgres_password.txt`. Do not commit `secrets/` or `.env.prod`.
+Do not commit `secrets/` or `.env.prod`.
 
 ### 3. Start the database, migrate, then start the app
 
