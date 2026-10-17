@@ -18,10 +18,11 @@ x-app: &app
     POSTGRES_USER: event_tables_app
     POSTGRES_PASSWORD_FILE: /run/secrets/postgres_runtime_password
     CELERY_BROKER_URL: redis://redis:6379/0
-    EMAIL_HOST: smtp.sendgrid.net
-    EMAIL_PORT: "587"
-    EMAIL_USE_TLS: "1"
-    EMAIL_HOST_USER: apikey
+    EMAIL_BACKEND: ${EMAIL_BACKEND:-django.core.mail.backends.smtp.EmailBackend}
+    EMAIL_HOST: ${EMAIL_HOST:-smtp.sendgrid.net}
+    EMAIL_PORT: ${EMAIL_PORT:-587}
+    EMAIL_USE_TLS: ${EMAIL_USE_TLS:-1}
+    EMAIL_HOST_USER: ${EMAIL_HOST_USER:-apikey}
     SENDGRID_API_KEY_FILE: /run/secrets/sendgrid_api_key
     DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL:?Set authenticated sender address}
     XDG_CACHE_HOME: /tmp/cache
@@ -82,7 +83,9 @@ services:
       POSTGRES_ADMIN_PASSWORD_FILE: /run/secrets/postgres_password
       POSTGRES_RUNTIME_PASSWORD_FILE: /run/secrets/postgres_runtime_password
       POSTGRES_APP_USER: event_tables_app
-    secrets: [django_secret_key, postgres_migration_password, postgres_runtime_password, postgres_password, sendgrid_api_key]
+      ADMIN_EMAIL: ${ADMIN_EMAIL:?Set the platform admin email}
+      ADMIN_PASSWORD_FILE: /run/secrets/admin_password
+    secrets: [django_secret_key, postgres_migration_password, postgres_runtime_password, postgres_password, sendgrid_api_key, admin_password]
     command: [python, manage.py, release_prepare]
   web:
     <<: *app
@@ -141,3 +144,5 @@ secrets:
     file: ./secrets/postgres_migration_password.txt
   sendgrid_api_key:
     file: ./secrets/sendgrid_api_key.txt
+  admin_password:
+    file: ./secrets/admin_password.txt

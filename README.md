@@ -63,6 +63,8 @@ docker compose -f compose.dev.yaml restart worker beat
 
 ## Run in production
 
+The VPS steps, including the DNS record for `libranconsult.tech`, are in [docs/deploy-vps.md](docs/deploy-vps.md).
+
 Production Compose expects a published application image, a public domain, and secret files on the host. It was not deployed by this repository. Web has no published port. Caddy serves HTTPS on ports 80 and 443 and proxies to Gunicorn. The database and Redis stay on a private network.
 
 The release job is the only process that migrates and collects static files. After that, the web, worker, and beat processes connect as the non-superuser role `event_tables_app`. Migrations use `event_tables_migrate`. The PostgreSQL superuser `event_tables` is used only to create those roles.

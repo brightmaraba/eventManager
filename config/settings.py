@@ -100,12 +100,23 @@ if DEBUG:
     STORAGES["staticfiles"]["BACKEND"] = "django.contrib.staticfiles.storage.StaticFilesStorage"
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 6 * 1024 * 1024
-EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = os.getenv("EMAIL_HOST", "maildev")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "1025"))
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "0") == "1"
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = secret("SENDGRID_API_KEY") if not DEBUG else ""
+
+
+def email_password():
+    explicit = os.getenv("EMAIL_HOST_PASSWORD", "")
+    if explicit:
+        return explicit
+    if not DEBUG or os.getenv("SENDGRID_API_KEY") or os.getenv("SENDGRID_API_KEY_FILE"):
+        return secret("SENDGRID_API_KEY")
+    return ""
+
+
+EMAIL_HOST_PASSWORD = email_password()
 EMAIL_TIMEOUT = 20
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "events@example.test")
 SERVER_EMAIL = DEFAULT_FROM_EMAIL

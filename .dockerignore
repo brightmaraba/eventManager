@@ -7,3 +7,5 @@ private/
 staticfiles/
 run/
 *.zip
+*.pdf
+unified_payments_with_ids.csv

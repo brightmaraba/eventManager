@@ -9,6 +9,18 @@ from core.errors import Conflict, DomainError, NotFound
 from core.locking import lock_event
 from guests.models import Ticket
 from guests.tokens import resolve_token
+from seating.models import SeatOccupancy
+
+
+def ticket_summary(ticket):
+    occupancy = SeatOccupancy.objects.filter(ticket=ticket).select_related("seat__table").first()
+    return {
+        "public_code": ticket.public_code,
+        "email": ticket.booking.original_email,
+        "display_name": ticket.display_name or ticket.public_code,
+        "table_label": occupancy.seat.table.label if occupancy else "",
+        "seat_label": occupancy.seat.label if occupancy else "",
+    }
 
 
 @transaction.atomic
@@ -22,7 +34,12 @@ def check_in(*, event, ticket_id, actor, request_id, device_ref="", idempotency_
         raise Conflict("ticket_inactive", "Cancelled tickets cannot be checked in.")
     existing = CheckIn.objects.select_for_update().filter(ticket=ticket).first()
     if existing and existing.is_current:
-        return {"ticket_id": str(ticket.id), "checked_in_at": existing.checked_in_at.isoformat(), "already_checked_in": True}
+        return {
+            "ticket_id": str(ticket.id),
+            "checked_in_at": existing.checked_in_at.isoformat(),
+            "already_checked_in": True,
+            **ticket_summary(ticket),
+        }
     now = timezone.now()
     if existing:
         existing.checked_in_at = now
@@ -36,7 +53,12 @@ def check_in(*, event, ticket_id, actor, request_id, device_ref="", idempotency_
     else:
         row = CheckIn.objects.create(ticket=ticket, checked_in_at=now, checked_in_by=actor, device_ref=device_ref)
     record(actor=actor, organization=event.organization, event=event, operation="checked_in", object_type="ticket", object_id=ticket.id, request_id=request_id, after={"at": row.checked_in_at.isoformat()})
-    return {"ticket_id": str(ticket.id), "checked_in_at": row.checked_in_at.isoformat(), "already_checked_in": False}
+    return {
+        "ticket_id": str(ticket.id),
+        "checked_in_at": row.checked_in_at.isoformat(),
+        "already_checked_in": False,
+        **ticket_summary(ticket),
+    }
 
 
 @transaction.atomic

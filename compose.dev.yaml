@@ -7,7 +7,8 @@ x-app: &app
   environment: &app-env
     DJANGO_DEBUG: "1"
     DJANGO_SECRET_KEY: dev-only-insecure-key-change-in-production
-    DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1
+    DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,.ngrok-free.app
+    DJANGO_CSRF_TRUSTED_ORIGINS: https://*.ngrok-free.app
     POSTGRES_DB: event_tables
     POSTGRES_USER: event_tables
     POSTGRES_PASSWORD: dev-only-password

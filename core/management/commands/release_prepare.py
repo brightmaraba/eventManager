@@ -35,3 +35,5 @@ class Command(BaseCommand):
             )
         call_command("migrate", interactive=False)
         call_command("collectstatic", interactive=False, verbosity=0)
+        if os.getenv("ADMIN_EMAIL"):
+            call_command("ensure_admin")

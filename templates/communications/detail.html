@@ -19,6 +19,7 @@
     <section class="panel">
       <h2>Preview for one recipient</h2>
       <pre>{{ preview.text }}</pre>
+      <div>{{ preview.html|safe }}</div>
     </section>
   {% endif %}
 {% endblock %}

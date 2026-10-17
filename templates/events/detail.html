@@ -18,7 +18,7 @@
     {% if can_import %}<a href="{% url 'imports' event.id %}">Import</a>{% endif %}
     <a href="{% url 'publications' event.id %}">Publications</a>
     {% if can_mail %}<a href="{% url 'campaigns' event.id %}">Messages</a>{% endif %}
-    {% if can_checkin %}<a href="{% url 'checkins' event.id %}">Check-in</a>{% endif %}
+    {% if can_checkin %}<a href="{% url 'checkins' event.id %}">Door</a>{% endif %}
     {% if can_export %}<a href="{% url 'exports' event.id %}">Exports</a>{% endif %}
     {% if can_manage %}<a href="{% url 'event-edit' event.id %}">Edit details</a>{% endif %}
   </nav>

@@ -2,7 +2,15 @@
 {% block title %}Scan{% endblock %}
 {% block content %}
   <h1>Ticket scan</h1>
-  {% if result %}<p class="status" role="status">{% if result.already_checked_in %}Already checked in at {{ result.checked_in_at }}{% else %}Checked in at {{ result.checked_in_at }}{% endif %}</p>{% endif %}
+  {% if message %}<p class="status" role="status">{{ message }}</p>{% endif %}
+  {% if result %}
+    <section class="panel">
+      <h2>{{ result.public_code|default:result.display_name }}</h2>
+      <p>{{ result.email }}</p>
+      {% if result.table_label %}<p>Table {{ result.table_label }}, seat {{ result.seat_label }}</p>{% else %}<p>No seat assigned.</p>{% endif %}
+      {% if result.already_checked_in %}<p>Already checked in at {{ result.checked_in_at }}.</p>{% else %}<p>Checked in at {{ result.checked_in_at }}.</p>{% endif %}
+    </section>
+  {% endif %}
   {% if token_present %}
     <form method="post">{% csrf_token %}<button type="submit">Confirm check-in</button></form>
   {% endif %}

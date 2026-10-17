@@ -31,6 +31,7 @@ def build_snapshot(event):
                     "booking_id": str(occupancy.ticket.booking_id),
                     "party_name": occupancy.ticket.booking.party_name,
                     "display_name": occupancy.ticket.display_name,
+                    "public_code": occupancy.ticket.public_code,
                 })
             elif occupancy and occupancy.hold_id:
                 row["occupant"] = "hold"

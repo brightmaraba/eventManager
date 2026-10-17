@@ -65,10 +65,39 @@ main {
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
   color: var(--olive);
   font-weight: 700;
   letter-spacing: -0.02em;
   text-decoration: none;
+}
+
+.brand img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+
+.scanner {
+  display: block;
+  width: min(100%, 420px);
+  max-height: 280px;
+  margin: 0.5rem 0 1rem;
+  background: #111;
+}
+
+.arrival-card h2 {
+  margin: 0.15rem 0;
+  font-size: 2rem;
+  line-height: 1.15;
+}
+
+.arrival-card .where {
+  margin: 0.2rem 0 0;
+  font-size: 1.6rem;
+  font-weight: 700;
 }
 
 nav {

@@ -28,7 +28,9 @@ def ready(request):
 
 def home(request):
     if request.user.is_authenticated:
-        return redirect("event-list")
+        from checkin.dashboard import landing_path
+
+        return redirect(landing_path(request.user))
     return redirect("login")
 
 

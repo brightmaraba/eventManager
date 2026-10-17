@@ -33,6 +33,7 @@ class Ticket(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     booking = models.ForeignKey(Booking, on_delete=models.PROTECT, related_name="tickets")
     sequence = models.PositiveIntegerField()
+    public_code = models.CharField(max_length=40, blank=True)
     display_name = models.CharField(max_length=200, blank=True)
     display_name_custom = models.BooleanField(default=False)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.ACTIVE)
@@ -41,11 +42,16 @@ class Ticket(models.Model):
     class Meta:
         constraints = [
             models.UniqueConstraint(fields=["booking", "sequence"], name="unique_ticket_sequence"),
+            models.UniqueConstraint(
+                fields=["public_code"],
+                condition=models.Q(public_code__gt=""),
+                name="unique_public_code",
+            ),
         ]
         ordering = ["sequence"]
 
     def __str__(self):
-        return self.display_name or f"Guest {self.sequence}"
+        return self.public_code or self.display_name or f"Guest {self.sequence}"
 
 
 class ImportBatch(models.Model):

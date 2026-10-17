@@ -1,21 +1,75 @@
 {% extends "base.html" %}
-{% block title %}Check-in{% endblock %}
+{% load static %}
+{% block title %}Door · {{ event.name }}{% endblock %}
 {% block content %}
-  <h1>Check-in</h1>
+  <h1>{{ event.name }}</h1>
+  <p>{{ event.venue_name }}{% if event.locality %}, {{ event.locality }}{% endif %}{% if schedule.doors %} · Doors {{ schedule.doors }}{% endif %}{% if schedule.starts %} · {{ schedule.starts }}{% endif %}</p>
+  <section class="metrics glass" aria-label="Door totals">
+    <div><strong>{{ metrics.tickets }}</strong> Tickets</div>
+    <div><strong>{{ metrics.parties }}</strong> Parties</div>
+    <div><strong>{{ metrics.checked_in }}</strong> Inside</div>
+    <div><strong>{{ metrics.waiting }}</strong> Still to arrive</div>
+    <div><strong>{{ mail.sent }}</strong> Emails sent</div>
+    <div><strong>{{ mail.pending }}</strong> Emails waiting</div>
+    <div><strong>{{ mail.failed }}</strong> Emails failed</div>
+    <div><strong>{{ metrics.open_seats }}</strong> Open seats</div>
+  </section>
   {% if message %}<p class="status" role="status">{{ message }}</p>{% endif %}
-  {% if progress %}<p>{{ progress.arrived }} of {{ progress.total }} arrived.</p>{% endif %}
-  <form method="post" class="panel">{% csrf_token %}<input type="hidden" name="action" value="search"><label>Search <input class="control" name="q" required></label><button type="submit">Search</button></form>
+  {% if arrival %}
+    <section class="panel arrival-card" aria-label="Latest scan">
+      <p>{% if arrival.already_checked_in %}Already inside{% else %}Checked in{% endif %}</p>
+      <h2>{{ arrival.public_code|default:arrival.display_name }}</h2>
+      <p>{{ arrival.email }}</p>
+      <p class="where">{% if arrival.table_label %}Table {{ arrival.table_label }} · Seat {{ arrival.seat_label }}{% else %}No seat assigned{% endif %}</p>
+    </section>
+  {% endif %}
+  <section class="panel" id="scan">
+    <h2>Scan a ticket</h2>
+    <video id="scan-video" class="scanner" playsinline muted></video>
+    <p id="scan-status">The camera starts when you ask for it. You can also paste a code below.</p>
+    <button type="button" id="scan-start">Start camera</button>
+    <form id="scan-form" method="post">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="scan">
+      <input type="hidden" name="token" id="scan-token" value="">
+    </form>
+  </section>
+  {% if can_mail %}
+    <section class="panel" aria-label="Ticket emails">
+      <h2>Ticket emails</h2>
+      <p>{{ mail.recipients }} guest {{ mail.recipients|pluralize:"address,addresses" }}. {{ mail.status_label }}.</p>
+      {% if mail.problems %}
+        <ul>
+          {% for problem in mail.problems %}<li>{{ problem }}</li>{% endfor %}
+        </ul>
+      {% elif mail.can_send %}
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="action" value="send">
+          <label><input type="checkbox" name="confirm" value="yes" required> Send a ticket email to every guest</label>
+          <button type="submit">Send</button>
+        </form>
+      {% endif %}
+      {% if mail.failed_to %}
+        <p>Failed: {{ mail.failed_to|join:", " }}</p>
+      {% endif %}
+    </section>
+  {% endif %}
+  <form method="post" class="panel">{% csrf_token %}<input type="hidden" name="action" value="search"><label>Search ticket, email, or party <input class="control" name="q" required></label><button type="submit">Search</button></form>
   <form method="post" class="panel">{% csrf_token %}<input type="hidden" name="action" value="scan"><label>Scanner code <input class="control" name="token" autocomplete="off"></label><button type="submit">Check in code</button></form>
+  {% if progress %}<p>{{ progress.arrived }} of {{ progress.total }} arrived.</p>{% endif %}
   {% for booking in results %}
     <section class="panel">
       <h2>{{ booking.party_name|default:booking.original_email }}</h2>
+      <p>{{ booking.original_email }}</p>
       {% for ticket in booking.tickets.all %}
         {% if ticket.status == "active" %}
           <form method="post">{% csrf_token %}
             <input type="hidden" name="ticket_id" value="{{ ticket.id }}">
-            <span>{{ ticket.display_name }}</span>
+            <span>{{ ticket.public_code|default:ticket.display_name }}</span>
+            {% if ticket.occupancy %}<span>Table {{ ticket.occupancy.seat.table.label }}, seat {{ ticket.occupancy.seat.label }}</span>{% endif %}
+            {% if ticket.checkin and not ticket.checkin.undone_at %}<span>Inside</span>{% endif %}
             <button name="action" value="arrive" type="submit">Check in</button>
-            <button name="action" value="qr" type="submit">Make QR token</button>
           </form>
           <form method="post">{% csrf_token %}
             <input type="hidden" name="action" value="undo">
@@ -27,4 +81,43 @@
       {% endfor %}
     </section>
   {% endfor %}
+  <section class="panel">
+    <h2>Tables</h2>
+    <table>
+      <thead><tr><th>Table</th><th>Seated</th><th>Inside</th><th>Open</th></tr></thead>
+      <tbody>
+        {% for table in tables %}
+          <tr>
+            <td>Table {{ table.label }}{% if table.reserved %} · {{ table.purpose }}{% endif %}</td>
+            <td>{{ table.assigned }}</td>
+            <td>{{ table.arrived }}</td>
+            <td>{{ table.open }}</td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="4">No tables yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+  <section class="panel">
+    <h2>Recent arrivals</h2>
+    {% if recent %}
+      <table>
+        <thead><tr><th>Time</th><th>Ticket</th><th>Guest</th><th>Seat</th></tr></thead>
+        <tbody>
+          {% for row in recent %}
+            <tr>
+              <td>{{ row.when }}</td>
+              <td>{{ row.public_code }}</td>
+              <td>{{ row.email }}</td>
+              <td>{% if row.table_label %}Table {{ row.table_label }}, seat {{ row.seat_label }}{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p>No one has arrived yet.</p>
+    {% endif %}
+  </section>
+  <script src="{% static 'checkin/scan.js' %}"></script>
 {% endblock %}

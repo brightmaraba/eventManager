@@ -1,6 +1,7 @@
 .env
 .env.prod
 secrets/
+kalenjin-gala-2026-table-booking.pdf
 __pycache__/
 *.pyc
 private/

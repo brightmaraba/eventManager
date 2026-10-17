@@ -13,9 +13,13 @@
 <body>
   <a class="skip" href="#content">Skip to content</a>
   <header class="site-header glass">
-    <a class="brand" href="{% url 'event-list' %}">Event tables</a>
+    <a class="brand" href="{% if door_event %}{% url 'checkins' door_event.id %}{% else %}{% url 'event-list' %}{% endif %}">
+      <img src="{% static 'brand/kcaw-logo.png' %}" alt="">
+      <span>Kalenjin Gala</span>
+    </a>
     <nav aria-label="Primary">
       {% if request.user.is_authenticated %}
+        {% if door_event %}<a href="{% url 'checkins' door_event.id %}">Door</a>{% endif %}
         <a href="{% url 'event-list' %}">Events</a>
         <a href="{% url 'organization-select' %}">Organization{% if current_organization %}: {{ current_organization.name }}{% endif %}</a>
         <form method="post" action="{% url 'logout' %}">

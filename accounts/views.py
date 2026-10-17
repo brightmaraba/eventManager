@@ -37,9 +37,11 @@ def login_view(request):
         else:
             login(request, user)
             _select_default_org(request, user)
-            destination = request.GET.get("next") or "/events/"
+            from checkin.dashboard import landing_path
+
+            destination = request.GET.get("next") or landing_path(user)
             if not destination.startswith("/") or destination.startswith("//"):
-                destination = "/events/"
+                destination = landing_path(user)
             return redirect(destination)
     return render(request, "accounts/login.html", {"error": error})
 
@@ -69,7 +71,9 @@ def mfa_enroll(request):
             otp_login(request, device)
             request.session.pop("mfa_user_pk", None)
             _select_default_org(request, user)
-            return redirect("event-list")
+            from checkin.dashboard import landing_path
+
+            return redirect(landing_path(user))
         return render(request, "accounts/mfa.html", {"mode": "enroll", "error": "That code was not accepted.", "qr": _qr(device.config_url), "secret": device.key})
     return render(request, "accounts/mfa.html", {"mode": "enroll", "qr": _qr(device.config_url), "secret": device.key, "error": ""})
 
@@ -90,7 +94,9 @@ def mfa_verify(request):
             otp_login(request, device)
             request.session.pop("mfa_user_pk", None)
             _select_default_org(request, user)
-            return redirect("event-list")
+            from checkin.dashboard import landing_path
+
+            return redirect(landing_path(user))
         error = "That code was not accepted."
     return render(request, "accounts/mfa.html", {"mode": "verify", "error": error})
 
